@@ -145,11 +145,17 @@ export function getMaxHpFromMeta(metaHpLv: number): number {
   return STARTING_HP + (metaHpLv || 0) * HP_PER_LEVEL;
 }
 
-/** 玩家队伍中某只宝可梦的最大 HP:养成基础 × 稀有度倍率(传说更能扛) */
+/**
+ * 玩家队伍中某只宝可梦的最大 HP:养成基础 × 稀有度倍率 × 种族值因子。
+ * 种族值因子 0.75~1.21(BST 175~720):同稀有度下种族值越高的宝可梦越能扛,
+ * 与敌方 getEnemyStats 的 BST 公式风格一致。
+ */
 export function getPkmMaxHp(pkmId: number, metaHpLv: number): number {
   const pkm = getPkmById(pkmId);
   const mult = RARITY_HP_MULT[pkm?.r || "c"] || 1;
-  return Math.round(getMaxHpFromMeta(metaHpLv) * mult);
+  const bst = getBST(pkmId);
+  const bstFactor = 0.75 + (bst / 720) * 0.46;
+  return Math.round(getMaxHpFromMeta(metaHpLv) * mult * bstFactor);
 }
 
 export function upgradeCost(level: number): number {
