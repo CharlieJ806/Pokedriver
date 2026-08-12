@@ -206,18 +206,19 @@ export default function Modal() {
     return (
       <div className="modal-wrap" onClick={closeModal}>
         <div className="modal" onClick={(e) => e.stopPropagation()}>
-          <div className="capture-pkmn">
-            {ICON(pkm.id) ? (
-              <img src={ICON(pkm.id)} alt="" />
-            ) : (
-              <div className="pkm-img-fallback">👾</div>
-            )}
-          </div>
-          <div
-            style={{ fontWeight: 800, color: RARITY_COLORS[pkm.r] }}
-          >
-            #{pkm.id} {pkm.c}
-          </div>
+          <div className={`dex-detail-card r-${pkm.r}`}>
+            <div className="capture-pkmn">
+              {ICON(pkm.id) ? (
+                <img src={ICON(pkm.id)} alt="" />
+              ) : (
+                <div className="pkm-img-fallback">👾</div>
+              )}
+            </div>
+            <div
+              style={{ fontWeight: 800, color: RARITY_COLORS[pkm.r] }}
+            >
+              #{pkm.id} {pkm.c}
+            </div>
           <div
             style={{ fontSize: 12, color: "var(--dim)", marginTop: 8, lineHeight: 1.7 }}
           >
@@ -279,6 +280,7 @@ export default function Modal() {
                 ➖ 移出队伍
               </button>
             ) : null}
+          </div>
           </div>
           <button className="btn btn-ghost" onClick={closeModal}>
             关闭

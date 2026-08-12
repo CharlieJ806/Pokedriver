@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // 纯客户端应用 → 静态导出(产出 out/,供 Cloudflare Pages 托管)
+  output: "export",
+
   // Optimize for static client-side app
   images: {
     unoptimized: true, // We use base64 icons, no Next.js image optimization needed
