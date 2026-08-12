@@ -179,62 +179,6 @@
   .dex-cell::after{animation:none!important}
 }
 
-/* ---------- 标题页布局(移植自 master,浅色适配) ---------- */
-#scr-title .title-inner{gap:14px;justify-content:center}
-.title-logo .logo-img{
-  width:min(86%,400px);height:auto;display:block;margin:0 auto;
-  filter:drop-shadow(0 4px 10px rgba(30,80,130,.25));
-}
-/* 三只初始伙伴(bob 浮沉动画) */
-.title-starters{
-  display:flex;gap:22px;height:84px;align-items:flex-end;justify-content:center;
-}
-.title-starters img{
-  height:70px;width:auto;object-fit:contain;image-rendering:pixelated;
-  animation:bob 2s ease-in-out infinite;filter:drop-shadow(0 5px 8px rgba(60,110,160,.4));
-}
-.title-starters img:nth-child(2){animation-delay:.4s;height:82px}
-.title-starters img:nth-child(3){animation-delay:.8s}
-/* 像素按钮板(整幅素材,文字绝对居中) */
-.title-cta{display:flex;flex-direction:column;gap:12px;width:min(88%,360px);margin:0 auto}
-.btn-plate{
-  position:relative;display:flex;flex-direction:column;align-items:center;justify-content:center;
-  width:100%;padding:0;border:none;background:none;cursor:pointer;
-  container-type:inline-size;
-  transition:transform .12s,filter .12s;
-}
-.bp-bg{display:block;width:100%;height:auto}
-.btn-plate:active{transform:scale(.97);filter:brightness(1.18)}
-.bp-content{
-  position:absolute;inset:0;display:flex;flex-direction:column;
-  align-items:center;justify-content:center;gap:1.4cqw;padding-bottom:3cqw;
-}
-.bp-label{
-  display:flex;align-items:center;justify-content:center;gap:2.5cqw;
-  font-size:10.5cqw;font-weight:800;letter-spacing:1.2cqw;color:#fff;
-  text-shadow:0 .5cqw 0 rgba(10,30,90,.55);line-height:1.15;
-}
-.bp-label-dark{color:#4a2c00;text-shadow:0 .3cqw 0 rgba(255,240,180,.5);font-size:10cqw}
-.bp-play{width:6.5cqw;height:auto}
-/* 四宫格导航(浅色卡 + 彩色描边发光) */
-.title-grid-nav{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;width:100%}
-.title-nav-card{
-  display:flex;flex-direction:column;align-items:center;gap:5px;
-  padding:12px 4px 10px;border-radius:14px;border:2px solid var(--line);
-  background:linear-gradient(160deg,var(--panel2),var(--panel));
-  color:var(--txt);cursor:pointer;text-align:center;transition:.12s;
-}
-.title-nav-card:active{transform:scale(.96);filter:brightness(1.1)}
-.tnc-dex{border-color:#3f9e4d;box-shadow:0 0 12px rgba(63,158,77,.25)}
-.tnc-study{border-color:#3b82f6;box-shadow:0 0 12px rgba(59,130,246,.25)}
-.tnc-train{border-color:#8b5cf6;box-shadow:0 0 12px rgba(139,92,246,.25)}
-.tnc-settings{border-color:#d97706;box-shadow:0 0 12px rgba(217,119,6,.25)}
-.tnc-icon{width:44px;height:44px;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 2px 3px rgba(40,80,130,.35))}
-.tnc-label{font-size:20px;letter-spacing:2px;line-height:1.1;color:var(--txt);font-weight:900}
-.tnc-sub{font-size:10px;color:var(--dim);margin-top:1px;letter-spacing:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%}
-.title-menu-extra{margin-top:-2px}
-.title-menu-extra .btn-mini{background:rgba(255,255,255,.8)}
-
 /* ---------- 地图 HUD 球图标 ---------- */
 .ball-hud-item{display:inline-flex;align-items:center;gap:3px;margin-right:6px;font-weight:700;color:var(--txt)}
 .ball-hud-item .px-icon{width:16px;height:16px;filter:drop-shadow(0 1px 2px rgba(40,80,130,.4))}
