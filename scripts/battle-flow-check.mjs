@@ -19,6 +19,12 @@ async function run(width, height, label) {
 
   await page.goto("http://localhost:3000", { waitUntil: "networkidle0" });
   await new Promise((r) => setTimeout(r, 1200));
+  // 清存档 → 首次游玩:新的冒险先进初始选择,选第一只后开局
+  await page.evaluate(() => {
+    localStorage.clear();
+  });
+  await page.reload({ waitUntil: "networkidle0" });
+  await new Promise((r) => setTimeout(r, 1500));
   await page.evaluate(() => {
     [...document.querySelectorAll("button")]
       .find((b) => b.textContent.includes("新的冒险"))
@@ -26,7 +32,7 @@ async function run(width, height, label) {
   });
   await new Promise((r) => setTimeout(r, 500));
   await page.evaluate(() => {
-    document.querySelectorAll("#scr-starter .btn")[0]?.click();
+    document.querySelectorAll(".starter-card")[0]?.click();
   });
   await new Promise((r) => setTimeout(r, 1500));
   // 第一列节点 row 随机(0-2),按布局公式动态算三个 y

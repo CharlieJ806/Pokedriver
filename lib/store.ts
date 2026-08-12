@@ -4,6 +4,7 @@ import { create } from "zustand";
 import { QUESTIONS, type Question } from "@/data";
 import {
   DECK_MAX,
+  DEFAULT_POKEMON_ID,
   GACHA_COST,
   MAX_TEAM_SIZE,
   POKE_BALLS,
@@ -113,6 +114,8 @@ type GameStore = {
   hydrated: boolean;
   activeEventId: string | null;
   gachaLastId: string | null;
+  /** 3D 投球捕获动画进行中(期间战斗舞台保持渲染,canvas 不卸载) */
+  captureAnimating: boolean;
   /** 最近一次答题结果(ephemeral,UI 据此播放反馈/调度下一题,键盘鼠标统一) */
   lastAnswer: AnswerResult | null;
 
@@ -146,7 +149,7 @@ type GameStore = {
   wipeAll: () => void;
 
   /* ---- 开局 ---- */
-  newRun: (starterId: number) => void;
+  newRun: (starterId?: number) => void;
   continueRun: () => boolean;
   quitToTitle: () => void;
   hasSave: () => boolean;
@@ -177,7 +180,9 @@ type GameStore = {
   playCard: (idx: number) => void;
   endTurnAction: () => void;
   endBattle: (won: boolean) => void;
-  attemptCapture: (ball: BallKey) => void;
+  attemptCapture: (ball: BallKey) => { success: boolean; pkmId: number } | undefined;
+  beginCaptureAnim: () => void;
+  finishCapture: () => void;
   skipCapture: () => void;
   chooseRewardCard: (cardId: string) => void;
   skipReward: () => void;
@@ -204,6 +209,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   hydrated: false,
   activeEventId: null,
   gachaLastId: null,
+  captureAnimating: false,
   lastAnswer: null,
 
   /* ---- 持久化 ---- */
@@ -434,17 +440,25 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   /* ---- 开局 ---- */
 
-  newRun: (starterId) => {
+  /**
+   * 新开一局。starterId 可选:
+   * - 传入(首次初始选择):标记收集并置为队首;
+   * - 不传(非首次「新的冒险」):直接使用图鉴配置的队伍 meta.team。
+   */
+  newRun: (starterId?: number) => {
     const meta = cloneMeta(get().meta);
     ensureMetaDefaults(meta);
     meta.totalRuns++;
-    meta.collected = { ...meta.collected, [String(starterId)]: true };
+    if (starterId != null) {
+      meta.collected = { ...meta.collected, [String(starterId)]: true };
+    }
 
-    // 开局队伍:所选御三家 + 图鉴配置的队伍(去重,上限 MAX_TEAM_SIZE)
+    // 开局队伍:所选御三家(如有)+ 图鉴配置的队伍(去重,上限 MAX_TEAM_SIZE)
     const team = [
-      starterId,
+      ...(starterId != null ? [starterId] : []),
       ...(meta.team || []).filter((id) => id !== starterId),
     ].slice(0, MAX_TEAM_SIZE);
+    if (team.length === 0) team.push(DEFAULT_POKEMON_ID); // 兜底(理论上不会发生)
     meta.team = [...team];
 
     const teamMaxHp = team.map((id) => getPkmMaxHp(id, meta.metaHpLv));
@@ -916,7 +930,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
   },
 
-  attemptCapture: (ball) => {
+  /**
+   * 掷球捕获:同步扣球并结算结果(数据立即落档)。
+   * 返回 { success, pkmId };UI 表现(3D 投球动画/飘字)由调用方播放,
+   * 结束后调用 finishCapture() 关闭弹窗并进入奖励/回地图。
+   */
+  attemptCapture: (ball): { success: boolean; pkmId: number } | undefined => {
     const run0 = get().run;
     if (!run0) return;
     const run = cloneRun(run0);
@@ -928,7 +947,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const ballDef = POKE_BALLS[ball];
     const finalRate = ballDef.rates[pkm.r] || ballDef.rates.c || 0.5;
 
-    if (Math.random() < finalRate) {
+    const success = Math.random() < finalRate;
+    if (success) {
       meta.collected = { ...meta.collected, [String(pkm.id)]: true };
       // 队伍有空位时自动上阵(meta 跨局保留,run 本局立即生效)
       if (meta.team.length < MAX_TEAM_SIZE && !meta.team.includes(pkm.id)) {
@@ -939,19 +959,24 @@ export const useGameStore = create<GameStore>((set, get) => ({
       } else if (!meta.team.includes(pkm.id)) {
         get().showToast("队伍已满,新伙伴将在图鉴中待命", 1800);
       }
-      set({ run, meta });
-      persistRun(run);
-      persistMeta(meta);
-      get().showToast(`🎉 成功捕获 ${getPkmName(pkm.id)}！`, 2200);
-    } else {
-      set({ run });
-      persistRun(run);
-      get().showToast(`${ballDef.name}摇了三下...失败了...`, 2000);
     }
+    set({ run, meta });
+    persistRun(run);
+    persistMeta(meta);
+    return { success, pkmId: pkm.id };
+  },
 
-    // 关闭捕获 → 奖励选卡
+  /** 开始投球捕获动画:关弹窗 + 标记动画中(战斗舞台保持渲染,canvas 不卸载) */
+  beginCaptureAnim: () => {
+    set({ modal: null, captureAnimating: true });
+  },
+
+  /** 捕获动画播完后的收尾:关弹窗 → 奖励选卡或回地图 */
+  finishCapture: () => {
+    const run = get().run;
+    set({ modal: null, captureAnimating: false });
+    if (!run) return;
     const node = currentNode(run);
-    set({ modal: null });
     if (
       node &&
       node.rewards &&

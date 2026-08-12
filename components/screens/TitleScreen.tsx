@@ -20,7 +20,14 @@ export default function TitleScreen() {
 
   const startNew = () => {
     AudioEngine.sfx("click");
-    setScreen("starter");
+    // 首次游玩:进初始选择;之后直接使用图鉴配置的队伍开局
+    const firstTime =
+      Object.keys(meta.collected).length === 0 && meta.team.length === 0;
+    if (firstTime) {
+      setScreen("starter");
+    } else {
+      useGameStore.getState().newRun();
+    }
   };
 
   return (

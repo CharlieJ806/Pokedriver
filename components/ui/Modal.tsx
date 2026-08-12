@@ -18,8 +18,13 @@ import {
 import { ALL_CARDS, findCard } from "@/lib/cards";
 import { ICON } from "@/lib/icon";
 import { AudioEngine } from "@/lib/audio";
+import { spawnFxText, domBurst } from "@/lib/dom-fx";
+import { BattleFX } from "@/lib/fx3d";
 import { GAME_EVENTS } from "@/lib/events";
 import type { BallKey } from "@/lib/types";
+
+/** 捕获动画进行中标志(防止连点/StrictMode 双触发) */
+let captureInFlight = false;
 
 export default function Modal() {
   const modal = useGameStore((s) => s.modal);
@@ -27,6 +32,7 @@ export default function Modal() {
   const meta = useGameStore((s) => s.meta);
   const closeModal = useGameStore((s) => s.closeModal);
   const attemptCapture = useGameStore((s) => s.attemptCapture);
+  const finishCapture = useGameStore((s) => s.finishCapture);
   const skipCapture = useGameStore((s) => s.skipCapture);
   const chooseRewardCard = useGameStore((s) => s.chooseRewardCard);
   const skipReward = useGameStore((s) => s.skipReward);
@@ -74,8 +80,48 @@ export default function Modal() {
                     count <= 0 ? "empty" : ""
                   }`}
                   onClick={() => {
-                    if (count <= 0) return;
-                    attemptCapture(key);
+                    if (count <= 0 || captureInFlight) return;
+                    captureInFlight = true;
+                    // 同步结算结果(数据落档)
+                    const res = attemptCapture(key);
+                    if (!res) {
+                      captureInFlight = false;
+                      return;
+                    }
+                    // 关闭弹窗露出 3D 舞台 → 播放投球动画
+                    // (captureAnimating 让 BattleScreen 保持渲染,canvas 不卸载)
+                    useGameStore.getState().beginCaptureAnim();
+                    AudioEngine.sfx("throwBall");
+                    const layer = document.getElementById("battle-stage");
+                    const finish = () => {
+                      if (res.success) {
+                        AudioEngine.sfx("caught");
+                        if (BattleFX.ok) setTimeout(() => BattleFX.endCapture(), 400);
+                        if (layer) {
+                          spawnFxText(layer, 50, 38, `成功捕获 ${getPkmName(res.pkmId)}！`, "#ffd700");
+                          domBurst(layer, 50, 40, "#ffd700", 26);
+                        }
+                      } else {
+                        AudioEngine.sfx("escape");
+                        if (layer) {
+                          spawnFxText(layer, 50, 38, `${getPkmName(res.pkmId)} 挣脱了精灵球，逃走了…`, "#ff8800");
+                        }
+                      }
+                      setTimeout(() => {
+                        captureInFlight = false;
+                        finishCapture();
+                      }, res.success ? 900 : 1200);
+                    };
+                    if (BattleFX.ok) {
+                      BattleFX.capture({
+                        result: res.success,
+                        onShake: () => AudioEngine.sfx("ballShake"),
+                        onAbsorbed: () => AudioEngine.sfx("ballHit"),
+                        onResult: finish,
+                      });
+                    } else {
+                      setTimeout(finish, 1200);
+                    }
                   }}
                 >
                   <span className="b-icon">{ball.icon}</span>
