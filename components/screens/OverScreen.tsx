@@ -46,10 +46,19 @@ export default function OverScreen() {
             className="btn btn-primary"
             onClick={() => {
               AudioEngine.sfx("click");
+              setScreen("starter");
+            }}
+          >
+            🎮 再来一局
+          </button>
+          <button
+            className="btn btn-ghost"
+            onClick={() => {
+              AudioEngine.sfx("click");
               setScreen("title");
             }}
           >
-            🔄 返回首页
+            🏠 返回首页
           </button>
         </div>
       </div>

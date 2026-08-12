@@ -456,13 +456,13 @@ function init(canvas: HTMLCanvasElement): boolean {
   if (S.ok && S.canvas !== canvas) dispose();
   try {
     S.canvas = canvas;
-    S.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: false });
+    S.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
     S.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.8));
     glowTex = makeGlowTexture();
 
     S.scene = new THREE.Scene();
-    S.scene.background = new THREE.Color(0x05070f);
-    S.scene.fog = new THREE.Fog(0x05070f, 5, 13);
+    // 透明底:场景艺术图(SceneBg)从 canvas 下方透出,不再用纯色/雾遮盖
+    S.scene.fog = null;
 
     S.camera = new THREE.PerspectiveCamera(48, 1, 0.1, 60);
     S.camera.position.set(0, 1.9, 4.5);
@@ -479,7 +479,7 @@ function init(canvas: HTMLCanvasElement): boolean {
 
     const floor = new THREE.Mesh(
       new THREE.PlaneGeometry(24, 24),
-      new THREE.MeshBasicMaterial({ map: makeFloorTexture(), transparent: true, opacity: 0.85 }),
+      new THREE.MeshBasicMaterial({ map: makeFloorTexture(), transparent: true, opacity: 0.22 }),
     );
     floor.rotation.x = -Math.PI / 2;
     S.scene.add(floor);

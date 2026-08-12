@@ -6,7 +6,8 @@ import { getPkmName, getPlayerAtk } from "@/lib/formulas";
 import { hydrateCardList } from "@/lib/cards";
 import { ICON } from "@/lib/icon";
 import { AudioEngine } from "@/lib/audio";
-import { spawnDmg, domBurst } from "@/lib/dom-fx";
+import { spawnDmg, spawnFxText, domBurst } from "@/lib/dom-fx";
+import { BattleFX } from "@/lib/fx3d";
 import type { Card } from "@/lib/types";
 
 function enemyStatusText(status: { type: string; turns: number } | null): string {
@@ -38,6 +39,8 @@ export default function BattleScreen() {
   } | null>(null);
   const lastProcessedRef = useRef(0);
   const nextTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const fxCanvasRef = useRef<HTMLCanvasElement>(null);
+  const [fxOk, setFxOk] = useState(false);
 
   // 答题反馈统一走 lastAnswer(键盘 1-4 与鼠标点击同路径,id 去重)
   // ⚠️ hooks 必须在条件 return 之前,否则 React 报 hooks 数量不一致
@@ -50,9 +53,18 @@ export default function BattleScreen() {
 
     if (res.correct) {
       AudioEngine.sfx("correct");
-      spawnDmg(document.getElementById("battle-stage"), 90, 140, `-${res.dmg}`);
-      if (res.combo === 5 || res.combo === 10 || res.combo % 5 === 0) {
+      const stage = document.getElementById("battle-stage");
+      // 玩家攻击动画:精灵前冲 + 光弹 + 命中粒子 + 受击抖动
+      const crit = res.combo > 0 && res.combo % 5 === 0;
+      if (BattleFX.ok) {
+        BattleFX.attack("player", { crit });
+        BattleFX.comboAura(res.combo);
+      }
+      spawnDmg(stage, 66, 34, `-${res.dmg}`, crit ? "#ffd700" : "#ff6688", crit);
+      if (crit) {
         AudioEngine.sfx("crit");
+        spawnFxText(stage, 66, 20, "暴击！", "#ffd700");
+        if (stage) domBurst(stage, 66, 34, "#ffd700", 20);
       }
       // 答对且战斗未结束:400ms 后出下一题(守卫:仍在答题阶段)
       if (!res.enemyDead && !res.playerDead) {
@@ -65,8 +77,17 @@ export default function BattleScreen() {
           setAnswerState(null);
         }, 400);
       }
+      // 击杀 → 敌方倒下动画
+      if (res.enemyDead && BattleFX.ok) {
+        setTimeout(() => BattleFX.ko("enemy"), 350);
+      }
     } else {
       AudioEngine.sfx("wrong");
+      // 答错反伤 → 敌方攻击动画
+      if (BattleFX.ok) {
+        BattleFX.attack("enemy", {});
+      }
+      spawnDmg(document.getElementById("battle-stage"), 28, 55, `-${res.counterDmg}`, "#ff0044");
       // 答错:立即进入出牌阶段(answerBattle 已调 enterCardPhase),清除高亮
       setAnswerState(null);
     }
@@ -78,6 +99,41 @@ export default function BattleScreen() {
       if (nextTimerRef.current) clearTimeout(nextTimerRef.current);
     };
   }, []);
+
+  // 3D 战斗场景初始化(精灵入场/攻击/受击/倒下动画)
+  useEffect(() => {
+    const canvas = fxCanvasRef.current;
+    if (!canvas || !run || !run.inBattle || !run.enemyPkm) return;
+    const ok = BattleFX.init(canvas);
+    setFxOk(ok);
+    if (ok) {
+      BattleFX.setRunning(true);
+      BattleFX.setPlayer(run.team[run.activeIdx] ?? 25);
+      BattleFX.setEnemy(run.enemyPkm.id, run.enemyPkm.r);
+    }
+    return () => {
+      BattleFX.setRunning(false);
+      BattleFX.dispose();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [run?.inBattle, run?.enemyPkm?.id]);
+
+  // 出战宝可梦变化 → 换人入场动画
+  useEffect(() => {
+    if (!fxOk || !run || !run.inBattle) return;
+    BattleFX.setPlayer(run.team[run.activeIdx] ?? 25);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [run?.activeIdx, run?.inBattle, fxOk]);
+
+  // 全灭 → 玩家倒下动画
+  useEffect(() => {
+    if (!fxOk || !run) return;
+    if (run.gameOver) {
+      const t = setTimeout(() => BattleFX.ko("player"), 500);
+      return () => clearTimeout(t);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [run?.gameOver, fxOk]);
 
   if (!run || !run.inBattle || !run.enemyPkm) return null;
 
@@ -104,6 +160,12 @@ export default function BattleScreen() {
     playCard(idx);
     AudioEngine.sfx("click");
     const stage = document.getElementById("battle-stage");
+    // 出牌动画:攻击卡 → 玩家攻击;治疗卡 → 治愈粒子;防御卡 → 护盾光
+    if (BattleFX.ok) {
+      if (card.type === "atk") BattleFX.attack("player", {});
+      else if (card.type === "heal") BattleFX.heal("player");
+      else if (card.type === "def") BattleFX.burstAt("player", 0x66ccff, 18);
+    }
     if (card.type === "atk" && stage) {
       domBurst(stage, 12, 8, "#ff5252", 12);
     }
@@ -116,6 +178,10 @@ export default function BattleScreen() {
       return;
     }
     endTurnAction();
+    // 回合结束 → 敌方攻击动画(泄能/异常结算后)
+    if (BattleFX.ok) {
+      setTimeout(() => BattleFX.attack("enemy", {}), 500);
+    }
   };
 
   return (
@@ -127,10 +193,13 @@ export default function BattleScreen() {
         </div>
       </div>
 
-      <div className="battle-stage" id="battle-stage">
+      <div className={`battle-stage${fxOk ? " fx-3d" : ""}`} id="battle-stage">
+        {/* 3D 战斗场景(精灵入场/攻击/受击/倒下动画) */}
+        <canvas ref={fxCanvasRef} id="battle-fx-canvas" />
+
         {/* 敌方 */}
         <div className="battle-enemy">
-          <div className="enemy-sprite-wrap">
+          <div className="enemy-sprite-wrap" style={fxOk ? { display: "none" } : {}}>
             {enemySprite ? (
               <img className="enemy-sprite" src={enemySprite} alt="" />
             ) : (
@@ -207,7 +276,7 @@ export default function BattleScreen() {
 
         {/* 玩家 */}
         <div className="battle-player">
-          <div className="player-sprite-wrap">
+          <div className="player-sprite-wrap" style={fxOk ? { display: "none" } : {}}>
             {ICON(run.team[run.activeIdx] ?? 25) ? (
               <img
                 id="player-pkm-sprite"

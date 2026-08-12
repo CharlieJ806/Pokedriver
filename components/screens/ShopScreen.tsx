@@ -72,7 +72,10 @@ export default function ShopScreen() {
             <div className="shop-price">{price}🪙</div>
           </div>
         ))}
+      </div>
 
+      {/* 底部固定操作区(参考线上版:主按钮固定在底部,不随列表滚动) */}
+      <div className="shop-foot">
         <button
           className="btn"
           onClick={() => {

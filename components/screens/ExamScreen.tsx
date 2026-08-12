@@ -133,66 +133,71 @@ export default function ExamScreen() {
             <div className="exam-timer">⏱ {fmtTime(session.timeLeft)}</div>
           </div>
 
-          <div className="exam-q">{q.q}</div>
+          <div className="exam-body">
+            <div className="exam-main">
+              <div className="exam-q">{q.q}</div>
 
-          <div className="battle-options" style={{ flexDirection: "column" }}>
-            {q.opts.map((opt, i) => (
-              <button
-                key={i}
-                className={
-                  "battle-opt-btn" +
-                  (picked === i ? (i === q.ans ? " correct" : " wrong") : "")
-                }
-                onClick={() => pick(i)}
-              >
-                {opt}
+              <div className="battle-options" style={{ flexDirection: "column" }}>
+                {q.opts.map((opt, i) => (
+                  <button
+                    key={i}
+                    className={
+                      "battle-opt-btn" +
+                      (picked === i ? (i === q.ans ? " correct" : " wrong") : "")
+                    }
+                    onClick={() => pick(i)}
+                  >
+                    {opt}
+                  </button>
+                ))}
+              </div>
+
+              <div className="set-row">
+                <button
+                  className={`btn-mini ${session.marked[session.idx] ? "active" : ""}`}
+                  onClick={toggleMark}
+                >
+                  🚩 {session.marked[session.idx] ? "取消标记" : "标记存疑"}
+                </button>
+                <button
+                  className="btn-mini"
+                  disabled={session.idx <= 0}
+                  onClick={() => jump(session.idx - 1)}
+                >
+                  ‹ 上一题
+                </button>
+                <button
+                  className="btn-mini"
+                  disabled={session.idx >= session.qs.length - 1}
+                  onClick={() => jump(session.idx + 1)}
+                >
+                  下一题 ›
+                </button>
+              </div>
+            </div>
+
+            {/* 题号导航(桌面端右侧边栏) */}
+            <div className="exam-nav">
+              <div className="exam-grid">
+                {session.qs.map((_, i) => (
+                  <button
+                    key={i}
+                    className={`exam-cell ${
+                      i === session.idx ? "current" : ""
+                    } ${session.picked[i] != null ? "answered" : ""} ${
+                      session.marked[i] ? "marked" : ""
+                    }`}
+                    onClick={() => jump(i)}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+              </div>
+              <button className="btn btn-primary" onClick={submitNow}>
+                交卷
               </button>
-            ))}
+            </div>
           </div>
-
-          <div className="set-row">
-            <button
-              className={`btn-mini ${session.marked[session.idx] ? "active" : ""}`}
-              onClick={toggleMark}
-            >
-              🚩 {session.marked[session.idx] ? "取消标记" : "标记存疑"}
-            </button>
-            <button
-              className="btn-mini"
-              disabled={session.idx <= 0}
-              onClick={() => jump(session.idx - 1)}
-            >
-              ‹ 上一题
-            </button>
-            <button
-              className="btn-mini"
-              disabled={session.idx >= session.qs.length - 1}
-              onClick={() => jump(session.idx + 1)}
-            >
-              下一题 ›
-            </button>
-          </div>
-
-          {/* 题号导航 */}
-          <div className="exam-grid">
-            {session.qs.map((_, i) => (
-              <button
-                key={i}
-                className={`exam-cell ${
-                  i === session.idx ? "current" : ""
-                } ${session.picked[i] != null ? "answered" : ""} ${
-                  session.marked[i] ? "marked" : ""
-                }`}
-                onClick={() => jump(i)}
-              >
-                {i + 1}
-              </button>
-            ))}
-          </div>
-
-          <button className="btn btn-primary" onClick={submitNow}>
-            交卷
-          </button>
           <button
             className="btn btn-ghost"
             onClick={() => {
