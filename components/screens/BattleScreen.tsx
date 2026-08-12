@@ -119,7 +119,17 @@ export default function BattleScreen() {
         BattleFX.setEnemy(r.enemyPkm.id, r.enemyPkm.r);
       }
     }
+    // 舞台尺寸变化(答题区隐藏/显示)时同步 3D 渲染尺寸,画面保持固定
+    const stage = canvas.parentElement;
+    const ro =
+      stage instanceof Element
+        ? new ResizeObserver(() => {
+            if (BattleFX.ok) BattleFX.resize();
+          })
+        : null;
+    if (ro && stage instanceof Element) ro.observe(stage);
     return () => {
+      ro?.disconnect();
       BattleFX.setRunning(false);
       BattleFX.dispose();
     };

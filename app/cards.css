@@ -30,10 +30,20 @@
 /* 图鉴稀有度标签 */
 .dc-rarity{font-size:9px;color:var(--dim)}
 /* 战斗精灵与信息区 */
-/* 3D 战斗场景 */
-#battle-fx-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;z-index:0}
+/* 3D 战斗场景:固定高度、不透明实心舞台(上浅下深:天空→地面) */
+#scr-battle .battle-stage{flex:none;height:min(54vh,520px)}
+@media (max-height:640px){
+  #scr-battle .battle-stage{height:min(44vh,360px)}
+}
+#battle-fx-canvas{
+  position:absolute;inset:0;width:100%;height:100%;display:block;z-index:0;
+  background:linear-gradient(180deg,#cfe6f8 0%,#e9f5fe 36%,#a9cfe8 72%,#7fb5dd 100%);
+}
 .battle-stage.fx-3d > *{position:relative;z-index:1}
-.battle-stage.fx-3d .enemy-info{background:rgba(255,255,255,.72);border:1px solid var(--line);border-radius:12px;padding:6px 12px;width:min(88vw,380px)}
+.battle-stage.fx-3d .enemy-info{
+  background:rgba(255,255,255,.72);border:1px solid var(--line);border-radius:12px;
+  padding:6px 12px;width:auto;max-width:min(88vw,380px);
+}
 .enemy-sprite{width:96px;height:80px;object-fit:contain;image-rendering:pixelated}
 .player-info{flex:1;text-align:left}
 .energy-orbs{display:inline-flex;gap:3px;margin-left:6px;flex-wrap:wrap}
@@ -56,7 +66,7 @@
 }
 /* 让背景透出的半透明处理 */
 .battle-stage{background:rgba(255,255,255,.75)}
-.battle-q-area{background:linear-gradient(180deg,rgba(255,255,255,.88),rgba(242,248,255,.94))}
+.battle-q-area{background:linear-gradient(180deg,rgba(255,255,255,.72),rgba(242,248,255,.85))}
 .hand-area{background:linear-gradient(180deg,rgba(242,248,255,.9),rgba(231,242,253,.94))}
 
 /* ---------- 战斗屏(卡牌版布局) ---------- */
