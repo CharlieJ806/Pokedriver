@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import { useGameStore } from "@/lib/store";
 import { getPkmName } from "@/lib/formulas";
 import { ICON } from "@/lib/icon";
@@ -11,7 +12,28 @@ export default function TitleScreen() {
   const setScreen = useGameStore((s) => s.setScreen);
   const continueRun = useGameStore((s) => s.continueRun);
 
-  const starterId = 25; // Pikachu 展示图
+  // 封面飘动宝可梦:每 5s 从已解锁图鉴随机换一只(图鉴为空时兜底皮卡丘)
+  const [titlePkmId, setTitlePkmId] = useState(25);
+  useEffect(() => {
+    const ids = Object.keys(meta.collected).map(Number);
+    const pool = ids.length > 0 ? ids : [25];
+    const pick = () => {
+      setTitlePkmId((prev) => {
+        let next = pool[Math.floor(Math.random() * pool.length)]!;
+        if (pool.length > 1) {
+          let guard = 0;
+          while (next === prev && guard++ < 8) {
+            next = pool[Math.floor(Math.random() * pool.length)]!;
+          }
+        }
+        return next;
+      });
+    };
+    pick();
+    const t = setInterval(pick, 5000);
+    return () => clearInterval(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [Object.keys(meta.collected).length]);
 
   const go = (id: string) => {
     AudioEngine.sfx("click");
@@ -42,8 +64,8 @@ export default function TitleScreen() {
           <div className="logo-sub">交 规 地 牢</div>
         </div>
         <div className="title-pkmn">
-          {ICON(starterId) ? (
-            <img src={ICON(starterId)} alt="Pikachu" />
+          {ICON(titlePkmId) ? (
+            <img key={titlePkmId} src={ICON(titlePkmId)} alt={getPkmName(titlePkmId)} />
           ) : null}
         </div>
 

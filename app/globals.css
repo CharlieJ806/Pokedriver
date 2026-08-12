@@ -86,10 +86,11 @@ body{
 .title-logo .logo-sub{font-size:min(6.5vw,26px);letter-spacing:14px;color:#c98f00;margin-top:8px;font-weight:700;text-shadow:0 2px 6px rgba(190,130,0,.35)}
 .title-logo .logo-tag{margin-top:10px;font-size:12px;color:var(--dim);letter-spacing:2px}
 .title-pkmn{display:flex;gap:14px;height:64px;align-items:flex-end;justify-content:center}
-.title-pkmn img{width:56px;height:56px;object-fit:contain;image-rendering:pixelated;animation:bob 2s ease-in-out infinite;filter:drop-shadow(0 5px 6px rgba(60,110,160,.35))}
-.title-pkmn img:nth-child(2){animation-delay:.4s;width:64px;height:64px}
-.title-pkmn img:nth-child(3){animation-delay:.8s}
+.title-pkmn img{width:56px;height:56px;object-fit:contain;image-rendering:pixelated;animation:bob 2s ease-in-out infinite,fadeIn .45s ease-out;filter:drop-shadow(0 5px 6px rgba(60,110,160,.35))}
+.title-pkmn img:nth-child(2){animation-delay:.4s,.4s;width:64px;height:64px}
+.title-pkmn img:nth-child(3){animation-delay:.8s,.8s}
 @keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
 .menu{display:flex;flex-direction:column;gap:12px;width:100%}
 .title-stats{font-size:12px;color:var(--dim);display:flex;gap:16px;justify-content:center}
 .title-team{display:flex;align-items:center;justify-content:center;gap:10px;font-size:13px;color:var(--dim);flex-wrap:wrap}
