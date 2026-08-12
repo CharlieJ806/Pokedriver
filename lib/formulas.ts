@@ -171,13 +171,13 @@ export function rarityWeight(r: Rarity): number {
 /* ============ 节点(迁移自 standalone game.js) ============ */
 
 export const NODE_ICONS: Record<NodeType, string> = {
-  battle: "⚔️",
-  elite: "💀",
-  shop: "🏪",
-  rest: "🏕️",
-  event: "❓",
-  treasure: "🎁",
-  boss: "👑",
+  battle: "/art/ui/item-sword.webp",
+  elite: "/art/ui/item-star.webp",
+  shop: "/art/ui/item-coin.webp",
+  rest: "/art/ui/item-campfire.webp",
+  event: "/art/ui/item-book.webp",
+  treasure: "/art/ui/item-trophy.webp",
+  boss: "/art/ui/item-skull.webp",
 };
 
 export const NODE_NAMES: Record<NodeType, string> = {

@@ -99,6 +99,19 @@ export function computeLayout(
   };
 }
 
+/* 地图节点像素图标缓存(/art/ui/item-*.webp,迁移自参考工程 NODE_ICON) */
+const NODE_IMG_CACHE = new Map<string, HTMLImageElement>();
+
+function nodeImage(path: string): HTMLImageElement | null {
+  let img = NODE_IMG_CACHE.get(path);
+  if (!img) {
+    img = new Image();
+    img.src = path;
+    NODE_IMG_CACHE.set(path, img);
+  }
+  return img.complete && img.naturalWidth > 0 ? img : null;
+}
+
 /** 绘制地图(迁移自 standalone renderDungeonMap;返回布局供命中检测) */
 export function renderMap(
   canvas: HTMLCanvasElement,
@@ -163,11 +176,17 @@ export function renderMap(
       ctx.shadowColor = "transparent";
       ctx.shadowBlur = 0;
 
-      ctx.fillStyle = node.visited ? "#9db6d2" : node.reachable ? "#17314f" : "#b8cbe0";
-      ctx.font = `${14 * dpr}px sans-serif`;
-      ctx.textAlign = "center";
-      ctx.textBaseline = "middle";
-      ctx.fillText(NODE_ICONS[node.type] || "?", x, y);
+      // 节点图标:像素素材(canvas 绘制);未加载完成前画占位点
+      const icon = nodeImage(NODE_ICONS[node.type] || "");
+      if (icon) {
+        const s = nodeR * 1.2;
+        ctx.drawImage(icon, x - s / 2, y - s / 2, s, s);
+      } else {
+        ctx.fillStyle = node.visited ? "#9db6d2" : node.reachable ? "#17314f" : "#b8cbe0";
+        ctx.beginPath();
+        ctx.arc(x, y, nodeR * 0.35, 0, Math.PI * 2);
+        ctx.fill();
+      }
 
       if (node.visited && node.col === currentNodeIdx) {
         ctx.beginPath();

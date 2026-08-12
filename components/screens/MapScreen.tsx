@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useGameStore } from "@/lib/store";
 import { hitTest, renderMap, type MapLayout } from "@/lib/map";
+import { NODE_ICONS } from "@/lib/formulas";
 import { hydrateCardList } from "@/lib/cards";
 import { AudioEngine } from "@/lib/audio";
 
@@ -37,6 +38,20 @@ export default function MapScreen() {
     };
 
     draw();
+    // 预加载节点像素图标:素材就绪后重绘(未就绪先画占位点)
+    const imgs = Object.values(NODE_ICONS).map((src) => {
+      const img = new Image();
+      img.src = src;
+      return img;
+    });
+    let pending = imgs.length;
+    const onReady = () => {
+      if (--pending === 0) draw();
+    };
+    imgs.forEach((img) => {
+      img.onload = onReady;
+      img.onerror = onReady;
+    });
     window.addEventListener("resize", draw);
     return () => window.removeEventListener("resize", draw);
   }, [run]);
