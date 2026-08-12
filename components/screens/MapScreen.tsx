@@ -78,7 +78,31 @@ export default function MapScreen() {
         <div className="map-topbar">
           <div className="map-floor">第 {run.floor} 层</div>
           <div className="map-hud">
-            ❤️{Math.ceil(run.hp)} 🪙{run.gold} 🏆{run.score} 🗺️F{run.floor}
+            <span className="ball-hud-item">
+              <img className="px-icon" src="/art/ui/item-ball-red.webp" alt="球" />
+              {run.pokeBalls.normal || 0}
+            </span>
+            {(run.pokeBalls.great || 0) > 0 && (
+              <span className="ball-hud-item">
+                <img className="px-icon" src="/art/ui/item-ball-blue.webp" alt="球" />
+                {run.pokeBalls.great}
+              </span>
+            )}
+            {(run.pokeBalls.ultra || 0) > 0 && (
+              <span className="ball-hud-item">
+                <img className="px-icon" src="/art/ui/item-ball-yellow.webp" alt="球" />
+                {run.pokeBalls.ultra}
+              </span>
+            )}
+            {(run.pokeBalls.master || 0) > 0 && (
+              <span className="ball-hud-item">
+                <img className="px-icon" src="/art/ui/item-ball-master.webp" alt="球" />
+                {run.pokeBalls.master}
+              </span>
+            )}
+            <span>❤️{Math.ceil(run.hp)}</span>
+            <span>🪙{run.gold}</span>
+            <span>🏆{run.score}</span>
           </div>
           <button className="btn-mini" onClick={() => setDeckOpen((v) => !v)}>
             🃏 牌组({run.deck.length})
