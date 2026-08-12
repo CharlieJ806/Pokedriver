@@ -144,8 +144,7 @@
   background:rgba(255,255,255,.92);box-shadow:0 6px 14px rgba(40,80,130,.18);
   position:relative;isolation:isolate;overflow:hidden;
   display:flex;flex-direction:column;align-items:center;
-  padding:10px 4px 8px;text-align:center;cursor:pointer;
-  content-visibility:auto;contain-intrinsic-size:110px;
+  padding:10px 4px 8px;min-height:112px;text-align:center;cursor:pointer;
   transition:transform .14s,box-shadow .14s,filter .14s;
   -webkit-appearance:none;appearance:none;font:inherit;
 }
