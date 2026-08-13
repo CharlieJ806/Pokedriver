@@ -99,14 +99,22 @@ export function getEnemyStats(
     (5 + ((bst / 720) * 15 * (RARITY_DMG_MULT[rarity] || 1))) * floorScale,
   );
   const captureRate = RARITY_CAPTURE[rarity] || 0.5;
+  // 传说/幻兽额外强度随楼层渐进解锁:低层不秒杀(F1=基础强度,F5 起恢复原倍率)
+  const legendScale = Math.min(1, (f - 1) / 4);
   if (TIER1.has(pkm.id)) {
-    return { hp: Math.floor(hp * 3), dmg: Math.floor(dmg * 2.5), captureRate: 0.02, isBoss: true };
+    const hm = 1 + 2 * legendScale; // 1 → 3
+    const dm = 1 + 1.5 * legendScale; // 1 → 2.5
+    return { hp: Math.floor(hp * hm), dmg: Math.floor(dmg * dm), captureRate: 0.02, isBoss: true };
   }
   if (TIER2.has(pkm.id)) {
-    return { hp: Math.floor(hp * 2), dmg: Math.floor(dmg * 1.8), captureRate: 0.05, isBoss: true };
+    const hm = 1 + legendScale; // 1 → 2
+    const dm = 1 + 0.8 * legendScale; // 1 → 1.8
+    return { hp: Math.floor(hp * hm), dmg: Math.floor(dmg * dm), captureRate: 0.05, isBoss: true };
   }
   if (MYTHICAL.has(pkm.id)) {
-    return { hp: Math.floor(hp * 2.5), dmg: Math.floor(dmg * 2), captureRate: 0.03, isBoss: true };
+    const hm = 1 + 1.5 * legendScale; // 1 → 2.5
+    const dm = 1 + legendScale; // 1 → 2
+    return { hp: Math.floor(hp * hm), dmg: Math.floor(dmg * dm), captureRate: 0.03, isBoss: true };
   }
   return { hp, dmg, captureRate, isBoss: false };
 }
@@ -188,6 +196,26 @@ export const NODE_NAMES: Record<NodeType, string> = {
   event: "事件",
   treasure: "宝箱",
   boss: "BOSS",
+};
+export const NODE_ORDER: NodeType[] = [
+  "battle",
+  "elite",
+  "shop",
+  "rest",
+  "event",
+  "treasure",
+  "boss",
+];
+
+/** 节点说明(地图界面引导) */
+export const NODE_DESCS: Record<NodeType, string> = {
+  battle: "普通战斗,答题击败敌人",
+  elite: "精英战,敌人更强、奖励更丰厚",
+  shop: "商店,购买精灵球与技能卡",
+  rest: "营地,休息回复或特训赚取养成金",
+  event: "随机事件,触发未知遭遇",
+  treasure: "宝箱,获得金币与卡牌奖励",
+  boss: "BOSS战,击败后进入下一层",
 };
 
 export function enemyPoolForNode(type: NodeType): Partial<Record<Rarity, number>> {

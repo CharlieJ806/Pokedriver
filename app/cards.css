@@ -49,6 +49,10 @@
 .battle-stage.fx-3d .battle-player{
   background:none;border-top:none;justify-content:flex-start;padding:8px 12px;
 }
+@media (max-width:640px){
+  /* 移动端舞台较矮,玩家信息栏定位到底部,避免遮挡 3D 玩家精灵 */
+  .battle-stage.fx-3d .battle-player{position:absolute;left:0;right:0;bottom:0;}
+}
 .battle-stage.fx-3d .player-info{
   background:rgba(255,255,255,.72);border:1px solid var(--line);border-radius:12px;
   padding:6px 12px;width:auto;text-align:left;flex:none;
@@ -149,6 +153,15 @@
 .deck-pick-card.locked{opacity:.4;cursor:default}
 .dp-name{font-size:12px;font-weight:800;margin-top:3px}
 .dp-meta{font-size:9px;color:var(--dim);line-height:1.4}
+
+/* ---------- 节点说明面板 ---------- */
+.node-guide{position:absolute;left:10px;top:46px;z-index:20;width:min(80vw,300px);max-height:60vh;overflow-y:auto;background:rgba(255,255,255,.97);border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px}
+.node-guide h3{font-size:14px;color:var(--cyan);margin:0}
+.node-guide-list{display:flex;flex-direction:column;gap:6px}
+.node-guide-item{display:flex;align-items:center;gap:8px;padding:6px 8px;border:1px solid var(--line);border-radius:10px;background:var(--panel);font-size:11px}
+.node-guide-item .px-icon{width:22px;height:22px}
+.ng-name{font-weight:800;color:var(--txt);flex:0 0 auto;min-width:46px}
+.ng-desc{color:var(--dim);line-height:1.4}
 
 /* ---------- 捕获弹窗 ---------- */
 .capture-title{font-size:20px;font-weight:900;text-align:center;margin-bottom:10px;color:var(--gold)}

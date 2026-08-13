@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useGameStore } from "@/lib/store";
 import { hitTest, renderMap, type MapLayout } from "@/lib/map";
-import { NODE_ICONS } from "@/lib/formulas";
+import { NODE_DESCS, NODE_ICONS, NODE_NAMES, NODE_ORDER } from "@/lib/formulas";
 import { hydrateCardList } from "@/lib/cards";
 import { AudioEngine } from "@/lib/audio";
 
@@ -14,6 +14,7 @@ export default function MapScreen() {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const layoutRef = useRef<MapLayout | null>(null);
   const [deckOpen, setDeckOpen] = useState(false);
+  const [guideOpen, setGuideOpen] = useState(false);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -122,6 +123,9 @@ export default function MapScreen() {
           <button className="btn-mini" onClick={() => setDeckOpen((v) => !v)}>
             🃏 牌组({run.deck.length})
           </button>
+          <button className="btn-mini" onClick={() => setGuideOpen((v) => !v)}>
+            ❓ 节点说明
+          </button>
         </div>
 
         <div className="map-canvas-wrap">
@@ -148,6 +152,24 @@ export default function MapScreen() {
                 ))}
             </div>
             <button className="btn-mini" onClick={() => setDeckOpen(false)}>
+              关闭
+            </button>
+          </div>
+        )}
+
+        {guideOpen && (
+          <div className="node-guide">
+            <h3>❓ 节点说明</h3>
+            <div className="node-guide-list">
+              {NODE_ORDER.map((type) => (
+                <div key={type} className="node-guide-item">
+                  <img className="px-icon" src={NODE_ICONS[type]} alt={NODE_NAMES[type]} />
+                  <span className="ng-name">{NODE_NAMES[type]}</span>
+                  <span className="ng-desc">{NODE_DESCS[type]}</span>
+                </div>
+              ))}
+            </div>
+            <button className="btn-mini" onClick={() => setGuideOpen(false)}>
               关闭
             </button>
           </div>

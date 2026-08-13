@@ -90,8 +90,13 @@ export default function BattleScreen() {
         BattleFX.attack("enemy", {});
       }
       spawnDmg(document.getElementById("battle-stage"), 28, 55, `-${res.counterDmg}`, "#ff0044");
-      // 答错:立即进入出牌阶段(answerBattle 已调 enterCardPhase),清除高亮
-      setAnswerState(null);
+      // 答错:保留高亮展示正确答案,1.2s 后切回出牌阶段视觉
+      if (!res.playerDead) {
+        nextTimerRef.current = setTimeout(() => {
+          nextTimerRef.current = null;
+          setAnswerState(null);
+        }, 1200);
+      }
     }
   }, [lastAnswer]);
 
@@ -155,6 +160,8 @@ export default function BattleScreen() {
 
   // 捕获弹窗/投球动画期间保持战斗场景存活(3D canvas 不卸载)
   const captureOpen = modal?.kind === "capture" || captureAnimating;
+  const revealWrong = !!answerState && !answerState.correct;
+  const defeatOpen = !!run?.gameOver;
   if (!run || !run.enemyPkm) return null;
   if (!run.inBattle && !captureOpen) return null;
 
@@ -326,11 +333,11 @@ export default function BattleScreen() {
       <div
         className="battle-q-area"
         style={{
-          opacity: run.turnPhase === "card" ? 0.4 : 1,
-          display: captureOpen ? "none" : undefined,
+          opacity: run.turnPhase === "card" && !revealWrong ? 0.4 : 1,
+          display: captureOpen || defeatOpen ? "none" : undefined,
         }}
       >
-        {run.turnPhase === "question" ? (
+        {run.turnPhase === "question" || revealWrong ? (
           <>
             <div className="battle-q-text">
               {run.currentQ
@@ -348,7 +355,7 @@ export default function BattleScreen() {
                         ? " correct"
                         : " wrong"
                       : "") +
-                    (answerState && answerState.picked === run.currentQ?.ans && !answerState.correct
+                    (answerState && !answerState.correct && i === run.currentQ?.ans
                       ? " reveal"
                       : "") +
                     (answerState ? " disabled" : "")
@@ -370,7 +377,7 @@ export default function BattleScreen() {
       <div
         className="hand-area"
         id="hand-area"
-        style={{ display: captureOpen ? "none" : undefined }}
+        style={{ display: captureOpen || defeatOpen ? "none" : undefined }}
       >
         {handCards.length === 0 && run.turnPhase === "card" ? (
           <div
@@ -410,7 +417,7 @@ export default function BattleScreen() {
       {/* 底部控制(捕获动画期间隐藏) */}
       <div
         className="battle-actions"
-        style={{ display: captureOpen ? "none" : undefined }}
+        style={{ display: captureOpen || defeatOpen ? "none" : undefined }}
       >
         <div className="energy-display">
           ⚡ {run.energy}

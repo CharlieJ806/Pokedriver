@@ -18,7 +18,28 @@ export default function RestScreen() {
         <div className="rest-card">
           <div style={{ fontSize: 12, color: "var(--dim)", marginBottom: 8 }}>
             当前 HP: {Math.ceil(run.hp)} / {run.maxHp}
+            {run.restUsed ? " · 本营地已使用" : ""}
           </div>
+          <button
+            className="btn"
+            disabled={run.restUsed}
+            onClick={() => {
+              AudioEngine.sfx("heal");
+              restHeal();
+            }}
+          >
+            🛌 休息 (回复30%HP)
+          </button>
+          <button
+            className="btn"
+            disabled={run.restUsed}
+            onClick={() => {
+              AudioEngine.sfx("heal");
+              restTrain();
+            }}
+          >
+            🔧 特训（回复+养成金）
+          </button>
           <button
             className="btn"
             onClick={() => {

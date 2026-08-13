@@ -143,6 +143,7 @@ export type RunState = {
   visitedNodes: string[];
   questionHistory: string[];
   captureBonus: number;
+  restUsed: boolean; // 当前营地是否已使用(休息/特训二选一,防无限刷)
 
   // ── 战斗现场(仅在 inBattle 时有意义) ──
   enemyPkm: Pokemon | null;

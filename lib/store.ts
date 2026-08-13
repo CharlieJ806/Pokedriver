@@ -51,6 +51,7 @@ import type {
   ToastState,
 } from "./types";
 import { GAME_EVENTS } from "./events";
+import { ADMIN_GOLD, adminPokeBalls, applyAdminMeta, isAdminEnv } from "./admin";
 
 export type StarterDef = {
   id: number;
@@ -218,6 +219,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (get().hydrated) return;
     const meta = loadMeta();
     ensureMetaDefaults(meta);
+    if (isAdminEnv()) applyAdminMeta(meta);
     const imported = getImportedQuestions();
     set({
       meta,
@@ -469,7 +471,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const run: RunState = {
       hp: teamMaxHp[0] ?? getMaxHpFromMeta(meta.metaHpLv),
       maxHp: teamMaxHp[0] ?? getMaxHpFromMeta(meta.metaHpLv),
-      gold: STARTING_GOLD,
+      gold: isAdminEnv() ? ADMIN_GOLD : STARTING_GOLD,
       score: 0,
       floor: 1,
       deck: deckFromBuilt(meta),
@@ -489,12 +491,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
       teamHp,
       teamMaxHp,
       activeIdx: 0,
-      pokeBalls: { normal: 3, great: 0, ultra: 0, beast: 0, master: 0 },
+      pokeBalls: isAdminEnv() ? adminPokeBalls() : { normal: 3, great: 0, ultra: 0, beast: 0, master: 0 },
       gameOver: false,
       runWon: false,
       visitedNodes: [],
       questionHistory: [],
       captureBonus: 0,
+      restUsed: false,
       enemyPkm: null,
       enemyHp: 0,
       enemyMaxHp: 0,
@@ -659,13 +662,19 @@ export const useGameStore = create<GameStore>((set, get) => ({
   },
 
   openRest: () => {
-    set({ screen: "rest", prevScreen: get().screen });
+    const run0 = get().run;
+    if (!run0) return;
+    const run = cloneRun(run0);
+    run.restUsed = false; // 每次进入新营地重置使用标记
+    set({ run, screen: "rest", prevScreen: get().screen });
+    persistRun(run);
   },
 
   restHeal: () => {
     const run0 = get().run;
-    if (!run0) return;
+    if (!run0 || run0.restUsed) return;
     const run = cloneRun(run0);
+    run.restUsed = true;
     // 全队恢复 30%
     run.teamHp = run.teamHp.map((h, i) =>
       Math.min(run.teamMaxHp[i] ?? h, h + Math.floor((run.teamMaxHp[i] ?? h) * 0.3)),
@@ -678,8 +687,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   restTrain: () => {
     const run0 = get().run;
-    if (!run0) return;
+    if (!run0 || run0.restUsed) return;
     const run = cloneRun(run0);
+    run.restUsed = true;
     // 全队恢复 15%
     run.teamHp = run.teamHp.map((h, i) =>
       Math.min(run.teamMaxHp[i] ?? h, h + Math.floor((run.teamMaxHp[i] ?? h) * 0.15)),
@@ -771,7 +781,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   /** 战斗中手动切换出战宝可梦 */
   switchPoke: (idx) => {
     const run0 = get().run;
-    if (!run0 || !run0.inBattle) return;
+    if (!run0 || !run0.inBattle || run0.gameOver) return;
     const run = cloneRun(run0);
     if (!switchActiveTo(run, idx)) {
       if ((run.teamHp[idx] || 0) <= 0) {
@@ -787,7 +797,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   answer: (idx) => {
     const run0 = get().run;
     const meta0 = get().meta;
-    if (!run0 || run0.turnPhase !== "question") return null;
+    if (!run0 || run0.turnPhase !== "question" || run0.gameOver) return null;
     const run = cloneRun(run0);
     const meta = cloneMeta(meta0);
     const q = run.currentQ;
@@ -844,7 +854,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   playCard: (idx) => {
     const run0 = get().run;
     const meta0 = get().meta;
-    if (!run0) return;
+    if (!run0 || run0.gameOver) return;
     const run = cloneRun(run0);
     const res = playCardOn(run, idx, meta0.metaAtkLv);
     if (!res) return;
@@ -861,7 +871,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   endTurnAction: () => {
     const run0 = get().run;
     const meta0 = get().meta;
-    if (!run0) return;
+    if (!run0 || run0.gameOver) return;
     const run = cloneRun(run0);
     const res = endTurn(run, get().questionPool, meta0.metaAtkLv);
     set({ run });
@@ -1032,12 +1042,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
 
   gameOverDefeat: () => {
     const run0 = get().run;
-    if (!run0) return;
+    if (!run0 || run0.gameOver) return;
     const run = cloneRun(run0);
     const meta = cloneMeta(get().meta);
     saveActiveFromHp(run);
     run.gameOver = true;
-    run.inBattle = false;
+    // 保持 inBattle = true,让战斗舞台播放玩家倒下动画后再切结算屏
 
     // 剩余金币入库养成
     if (run.gold > 0) {
@@ -1066,11 +1076,19 @@ export const useGameStore = create<GameStore>((set, get) => ({
       meta,
       gameOver: info,
       modal: null,
-      screen: "over",
-      prevScreen: get().screen,
     });
     persistRun(run);
     persistMeta(meta);
+
+    // 倒下动画(约 0.5s 起播 + 0.7s 时长)后切结算屏
+    setTimeout(() => {
+      const cur = get().run;
+      if (!cur?.gameOver) return;
+      const r = cloneRun(cur);
+      r.inBattle = false;
+      set({ run: r, screen: "over", prevScreen: get().screen });
+      persistRun(r);
+    }, 1400);
   },
 }));
 

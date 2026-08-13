@@ -164,6 +164,7 @@ export function loadRun(): RunState | null {
       visitedNodes: d.visitedNodes || [],
       questionHistory: d.questionHistory || [],
       captureBonus: d.captureBonus || 0,
+      restUsed: !!d.restUsed,
 
       enemyPkm: d.enemyPkm || null,
       enemyHp: d.enemyHp ?? 0,
