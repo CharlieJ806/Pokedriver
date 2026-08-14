@@ -36,8 +36,9 @@
 .chip{
   border:1px solid var(--line);border-radius:20px;
   background:var(--panel);color:var(--dim);text-shadow:none;
-  padding:6px 12px;
+  padding:7px 14px;min-height:32px;line-height:1.2;
 }
+.chip:active{transform:scale(.96)}
 .chip.active{
   background:var(--cyan);border-color:var(--cyan);
   color:#04121a;font-weight:800;text-shadow:none;
@@ -178,3 +179,17 @@
 /* ---------- 地图 HUD 球图标 ---------- */
 .ball-hud-item{display:inline-flex;align-items:center;gap:3px;margin-right:6px;font-weight:700;color:var(--txt)}
 .ball-hud-item .px-icon{width:16px;height:16px;filter:drop-shadow(0 1px 2px rgba(40,80,130,.4))}
+
+/* ---------- 触屏无 hover:消除点击后 hover 态粘滞 ---------- */
+/* 只重置默认态,不干扰 .btn-primary/.btn-danger 与答题状态色(correct/wrong/reveal) */
+@media (hover:none){
+  .btn:hover,.btn-primary:hover,.btn-mini:hover,.btn-ghost:hover,
+  .battle-opt-btn:hover,.end-turn-btn:hover,.dex-cell:hover,.starter-card:hover{filter:none}
+  .btn:not(.btn-primary):not(.btn-danger):hover,
+  .btn-mini:not(.danger):hover,
+  .btn-ghost:hover,
+  .battle-opt-btn:not(.correct):not(.wrong):not(.reveal):hover{border-color:var(--line)}
+  .btn-ghost:hover{color:var(--dim)}
+  .modal .btn-ghost:hover{border-color:var(--line)}
+  .starter-card:hover{border-color:var(--line);box-shadow:0 6px 16px rgba(40,100,160,.12)}
+}

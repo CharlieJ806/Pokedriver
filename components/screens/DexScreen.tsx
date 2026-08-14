@@ -79,7 +79,8 @@ export default function DexScreen() {
             const collected = !!meta.collected[String(p.id)];
             const inTeam = meta.team.includes(p.id);
             return (
-              <div
+              <button
+                type="button"
                 key={p.id}
                 className={`dex-cell rarity-${p.r} ${collected ? "collected" : "locked"}`}
                 onClick={() => {
@@ -89,23 +90,23 @@ export default function DexScreen() {
                   }
                 }}
               >
-                <div className="dc-id">#{p.id}</div>
+                <span className="dc-id">#{p.id}</span>
                 {ICON(p.id) ? (
                   <img className="dc-img" src={ICON(p.id)} alt="" />
                 ) : (
-                  <div className="pkm-img-fallback">👾</div>
+                  <span className="pkm-img-fallback">👾</span>
                 )}
-                <div className="dc-name">
+                <span className="dc-name">
                   {collected ? p.c : "???"}
                   {inTeam ? " ⭐" : ""}
-                </div>
-                <div className="dc-rarity">{RARITY_NAMES[p.r]}</div>
-              </div>
+                </span>
+                <span className="dc-rarity">{RARITY_NAMES[p.r]}</span>
+              </button>
             );
           })}
         </div>
         <button
-          className="btn btn-ghost"
+          className="btn-ghost"
           onClick={() => {
             AudioEngine.sfx("click");
             setScreen("title");

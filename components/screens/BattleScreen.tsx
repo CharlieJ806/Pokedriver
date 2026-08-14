@@ -382,7 +382,7 @@ export default function BattleScreen() {
         {handCards.length === 0 && run.turnPhase === "card" ? (
           <div
             style={{
-              color: "var(--text2)",
+              color: "var(--dim)",
               fontSize: 10,
               textAlign: "center",
               width: "100%",

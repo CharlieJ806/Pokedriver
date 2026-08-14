@@ -174,17 +174,17 @@ export default function Modal() {
                   AudioEngine.sfx("coin");
                 }}
               >
-                <div style={{ fontSize: 7, color: "var(--text2)" }}>
+                <div style={{ fontSize: 9, color: "var(--dim)" }}>
                   {RARITY_NAMES[card.rarity]}
                 </div>
                 <div style={{ fontSize: 22 }}>{card.icon}</div>
                 <div style={{ fontWeight: 700, fontSize: 10 }}>
                   {card.name}
                 </div>
-                <div style={{ fontSize: 7, color: "var(--text2)" }}>
+                <div style={{ fontSize: 9, color: "var(--dim)" }}>
                   {card.cost}⚡
                 </div>
-                <div style={{ fontSize: 7, lineHeight: 1.2 }}>{card.desc}</div>
+                <div style={{ fontSize: 9, lineHeight: 1.3 }}>{card.desc}</div>
               </div>
             ))}
           </div>

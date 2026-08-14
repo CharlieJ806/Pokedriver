@@ -7,20 +7,29 @@
 }
 .btn-ghost:hover{color:var(--txt);border-color:var(--dim)}
 .btn-ghost:active{transform:scale(.96)}
+/* .btn.btn-ghost 在 set-row(头部导航)里应保持紧凑,不要继承 .btn 的 width:100% */
+.set-row .btn.btn-ghost{flex:0 0 auto;width:auto}
 .btn-mini.empty{opacity:.45}
 .search-input{flex:1;padding:9px 12px;border-radius:10px;border:1px solid var(--line);background:var(--panel);color:var(--txt);font-size:14px;outline:none;min-width:0}
 .search-input:focus{border-color:var(--cyan)}
 .btn-mini.danger{border-color:var(--red);color:#c81f4e;background:rgba(255,61,104,.08);font-weight:700}
 /* 菜单屏滚动:title-inner 占满屏幕,内容多时可滚动;标题屏保持居中 */
-.title-inner{flex:1;min-height:0;overflow-y:auto;margin-left:auto;margin-right:auto}
-#scr-title .title-inner{justify-content:center}
+.title-inner{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden;margin-left:auto;margin-right:auto}
+/* 标题屏垂直居中 + 内容超高时可正常滚动(避免 justify-content:center 裁掉顶部) */
+#scr-title .title-inner{justify-content:flex-start}
+#scr-title .title-inner > *:first-child{margin-top:auto}
+#scr-title .title-inner > *:last-child{margin-bottom:auto}
 /* PC 端横屏满屏:各屏宽度上限放宽,充分利用宽屏 */
 #scr-dex .title-inner{width:min(96vw,900px)} /* 图鉴:移动端 96vw,桌面被下方 @media 覆盖 */
 @media (min-width:768px){
   .title-inner{width:min(94vw,1100px)}               /* 菜单屏(养成/抽卡/题库等) */
   #scr-dex .title-inner{width:min(97vw,1800px)}      /* 图鉴:接近满宽网格 */
   .map-inner{max-width:none}                          /* 地图:全宽 */
-  #scr-battle > *{max-width:min(96vw,1600px);width:100%;margin-left:auto;margin-right:auto}
+  #scr-battle .battle-stage{max-width:min(96vw,900px);width:100%;margin-left:auto;margin-right:auto}
+  #scr-battle .battle-topbar,
+  #scr-battle .battle-q-area,
+  #scr-battle .hand-area,
+  #scr-battle .battle-actions{max-width:min(96vw,720px);width:100%;margin-left:auto;margin-right:auto}
   .shop-list,.rest-list{max-width:min(96vw,1200px)}  /* 商店/营地 */
 }
 /* title-inner 的 align-items:center 会让 flex 子项收缩到内容宽度,
@@ -101,8 +110,8 @@
 /* ---------- 答题区 ---------- */
 .battle-q-area{background:linear-gradient(180deg,var(--bg2),var(--bg));border-top:1px solid var(--line);padding:10px 12px;display:flex;flex-direction:column;gap:8px;transition:opacity .3s}
 .battle-q-text{font-size:15px;line-height:1.55;min-height:44px}
-.battle-options{display:flex;flex-direction:column;gap:8px}
-.battle-opt-btn{display:block;width:100%;text-align:left;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--txt);font-size:14px;line-height:1.4;cursor:pointer;transition:.12s;font-family:inherit}
+.battle-options{display:flex;flex-direction:column;gap:8px;counter-reset:bopt}
+.battle-opt-btn{display:flex;align-items:flex-start;gap:10px;counter-increment:bopt;width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--txt);font-size:14px;line-height:1.4;cursor:pointer;transition:.12s;font-family:inherit}
 .battle-opt-btn:hover{border-color:var(--cyan)}
 .battle-opt-btn:active{transform:scale(.98);border-color:var(--cyan)}
 .battle-opt-btn.correct{border-color:var(--green);background:rgba(0,255,136,.12)}
@@ -110,6 +119,17 @@
 .battle-opt-btn.reveal{border-color:var(--green)}
 .battle-opt-btn.disabled{pointer-events:none}
 .battle-options:has(.battle-opt-btn.correct) .battle-opt-btn{pointer-events:none}
+
+/* 选项序号角标(1-4,对应桌面端键盘 1-4 快捷键) */
+.battle-opt-btn::before{
+  content:counter(bopt);flex:0 0 24px;height:24px;border-radius:7px;
+  display:flex;align-items:center;justify-content:center;
+  background:var(--panel);border:1px solid var(--line);
+  font-weight:800;color:var(--cyan);font-size:13px;line-height:1;
+}
+.battle-opt-btn.correct::before{background:var(--green);color:#04140b;border-color:var(--green)}
+.battle-opt-btn.wrong::before{background:var(--red);color:#fff;border-color:var(--red)}
+.battle-opt-btn.reveal::before{background:var(--green);color:#04140b;border-color:var(--green)}
 
 /* ---------- 手牌 ---------- */
 .hand-area{display:flex;gap:8px;overflow-x:auto;padding:10px 12px;min-height:118px;background:linear-gradient(180deg,var(--bg),rgba(240,248,255,.85));border-top:1px solid var(--line);scroll-snap-type:x mandatory}
@@ -119,7 +139,7 @@
 .card-cost{position:absolute;top:-6px;left:-6px;width:22px;height:22px;border-radius:50%;background:var(--cyan);color:#04121a;font-weight:900;font-size:12px;display:flex;align-items:center;justify-content:center;border:2px solid var(--bg)}
 .card-icon{font-size:26px;line-height:1.2}
 .card-name{font-size:11px;font-weight:800}
-.card-desc{font-size:8px;color:var(--dim);line-height:1.3}
+.card-desc{font-size:9px;color:var(--dim);line-height:1.35}
 .hand-card.type-atk{border-color:rgba(255,82,82,.55)}
 .hand-card.type-def{border-color:rgba(68,138,255,.55)}
 .hand-card.type-heal{border-color:rgba(0,255,136,.45)}
@@ -133,9 +153,12 @@
 
 /* ---------- 地图(卡牌版) ---------- */
 .map-inner{flex:1;display:flex;flex-direction:column;min-height:0;position:relative;width:100%}
-.map-topbar{display:flex;align-items:center;gap:8px;padding:calc(8px + var(--safe-t)) 12px 8px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.88)}
+.map-topbar{display:flex;align-items:center;flex-wrap:wrap;gap:6px 8px;padding:calc(8px + var(--safe-t)) 12px 8px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.88)}
 .map-floor{font-weight:900;color:var(--cyan);font-size:14px}
-.map-hud{font-size:12px;color:var(--dim);display:flex;gap:8px;flex:1;justify-content:flex-end}
+.map-hud{font-size:12px;color:var(--dim);display:flex;flex-wrap:wrap;gap:2px 8px;flex:1;justify-content:flex-end}
+@media (max-width:640px){
+  .map-topbar > .btn-mini{flex:1 1 45%}
+}
 .map-canvas-wrap{flex:1;position:relative;min-height:0}
 #map-canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:manipulation}
 
