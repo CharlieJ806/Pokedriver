@@ -25,11 +25,7 @@
   .title-inner{width:min(94vw,1100px)}               /* 菜单屏(养成/抽卡/题库等) */
   #scr-dex .title-inner{width:min(97vw,1800px)}      /* 图鉴:接近满宽网格 */
   .map-inner{max-width:none}                          /* 地图:全宽 */
-  #scr-battle .battle-stage,
-  #scr-battle .battle-topbar{max-width:min(96vw,900px);width:100%;margin-left:auto;margin-right:auto}
-  #scr-battle .battle-q-area,
-  #scr-battle .hand-area,
-  #scr-battle .battle-actions{max-width:min(96vw,720px);width:100%;margin-left:auto;margin-right:auto}
+  #scr-battle > *{max-width:min(96vw,900px);width:100%;margin-left:auto;margin-right:auto}
   .shop-list,.rest-list{max-width:min(96vw,1200px)}  /* 商店/营地 */
 }
 /* title-inner 的 align-items:center 会让 flex 子项收缩到内容宽度,
@@ -104,11 +100,11 @@
 .hand-area{background:linear-gradient(180deg,rgba(242,248,255,.9),rgba(231,242,253,.94))}
 
 /* ---------- 战斗屏(卡牌版布局) ---------- */
-#scr-battle .battle-topbar{position:static;display:flex;align-items:center;padding:calc(8px + var(--safe-t)) 12px 8px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.88)}
+#scr-battle .battle-topbar{flex:0 0 auto;position:static;display:flex;align-items:center;padding:calc(8px + var(--safe-t)) 12px 8px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.88)}
 .battle-combo{font-weight:900;color:var(--gold);margin-left:auto;font-size:14px}
 .battle-enemy{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 12px 4px}
 .enemy-sprite-wrap img{width:96px;height:80px;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 0 14px rgba(255,82,82,.45))}
-.enemy-info{width:min(88vw,380px);text-align:center}
+.enemy-info{width:min(88vw,380px);text-align:left}
 .enemy-name-inline{font-size:15px;font-weight:800}
 .enemy-hp-bar{height:12px;border-radius:6px;background:#f7e8e8;border:1px solid #ecc4c4;overflow:hidden;margin-top:5px}
 .enemy-hp-fill{height:100%;background:linear-gradient(90deg,#ff5f6d,#ff0044);border-radius:6px;transition:width .35s}
@@ -120,7 +116,9 @@
 .battle-player-info{font-size:12px;color:var(--dim);margin-top:3px}
 
 /* ---------- 答题区 ---------- */
-.battle-q-area{position:relative;background:linear-gradient(180deg,var(--bg2),var(--bg));border-top:1px solid var(--line);padding:16px 12px 10px;display:flex;flex-direction:column;gap:8px;transition:opacity .3s}
+.battle-q-area{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;position:relative;background:linear-gradient(180deg,var(--bg2),var(--bg));border-top:1px solid var(--line);padding:16px 12px 10px;display:flex;flex-direction:column;gap:8px;transition:opacity .3s}
+/* 答题内容在选项区内垂直居中,内容超高时可滚动(滚出/滚入均不裁切) */
+.battle-q-area > *{margin-top:auto;margin-bottom:auto}
 /* 答题倒计时条:悬浮于答题区顶部,不占布局高度 */
 .battle-timer{
   position:absolute;top:0;left:0;right:0;height:14px;z-index:2;
@@ -164,7 +162,7 @@
 .battle-opt-btn.reveal::before{background:var(--green);color:#04140b;border-color:var(--green)}
 
 /* ---------- 手牌 ---------- */
-.hand-area{display:flex;gap:8px;overflow-x:auto;padding:10px 12px;min-height:118px;background:linear-gradient(180deg,var(--bg),rgba(240,248,255,.85));border-top:1px solid var(--line);scroll-snap-type:x mandatory}
+.hand-area{flex:0 0 auto;display:flex;gap:8px;overflow-x:auto;padding:10px 12px;min-height:118px;background:linear-gradient(180deg,var(--bg),rgba(240,248,255,.85));border-top:1px solid var(--line);scroll-snap-type:x mandatory}
 .hand-card{flex:0 0 auto;width:96px;scroll-snap-align:start;border-radius:12px;padding:8px 6px;border:1px solid var(--line);background:linear-gradient(180deg,var(--panel2),var(--panel));text-align:center;cursor:pointer;transition:.12s;position:relative;display:flex;flex-direction:column;gap:3px}
 .hand-card:active{transform:scale(.93);border-color:var(--cyan)}
 .hand-card.unaffordable{opacity:.45;filter:grayscale(.4)}
@@ -177,7 +175,7 @@
 .hand-card.type-heal{border-color:rgba(0,255,136,.45)}
 .hand-card.type-control{border-color:rgba(136,68,255,.5)}
 .hand-card.type-status{border-color:rgba(224,64,251,.5)}
-.energy-display{display:flex;align-items:center;gap:6px;font-weight:800;color:var(--cyan);margin-right:auto;flex:none}
+.energy-display{display:flex;align-items:center;gap:6px;font-weight:800;color:var(--cyan);margin-right:auto;flex:none;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:4px 10px}
 .energy-orb{width:8px;height:8px;border-radius:50%;background:var(--cyan);box-shadow:0 0 6px var(--cyan);display:inline-block}
 .end-turn-btn{padding:10px 18px;border-radius:12px;border:1px solid var(--cyan);color:#04121a;background:linear-gradient(180deg,#4df7ff,var(--cyan));font-weight:800;cursor:pointer;font-family:inherit;font-size:14px;letter-spacing:1px;transition:transform .12s,filter .12s}
 .end-turn-btn:hover{filter:brightness(1.07)}
