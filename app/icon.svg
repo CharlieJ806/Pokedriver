@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <linearGradient id="pk-top" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4df7ff"/>
+      <stop offset="1" stop-color="#00b4d8"/>
+    </linearGradient>
+    <clipPath id="pk-ball"><circle cx="32" cy="32" r="28"/></clipPath>
+  </defs>
+  <circle cx="32" cy="32" r="30" fill="#17314f"/>
+  <g clip-path="url(#pk-ball)">
+    <rect x="4" y="4" width="56" height="28" fill="url(#pk-top)"/>
+    <rect x="4" y="32" width="56" height="28" fill="#ffffff"/>
+    <rect x="4" y="29" width="56" height="6" fill="#17314f"/>
+  </g>
+  <circle cx="32" cy="32" r="9" fill="#ffffff" stroke="#17314f" stroke-width="3"/>
+  <circle cx="32" cy="32" r="3.5" fill="#00b4d8"/>
+</svg>

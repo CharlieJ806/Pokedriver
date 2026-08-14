@@ -377,7 +377,7 @@ export default function BattleScreen() {
       <div
         className="hand-area"
         id="hand-area"
-        style={{ display: captureOpen || defeatOpen ? "none" : undefined }}
+        style={{ display: captureOpen || defeatOpen || revealWrong ? "none" : undefined }}
       >
         {handCards.length === 0 && run.turnPhase === "card" ? (
           <div
@@ -417,7 +417,7 @@ export default function BattleScreen() {
       {/* 底部控制(捕获动画期间隐藏) */}
       <div
         className="battle-actions"
-        style={{ display: captureOpen || defeatOpen ? "none" : undefined }}
+        style={{ display: captureOpen || defeatOpen || revealWrong ? "none" : undefined }}
       >
         <div className="energy-display">
           ⚡ {run.energy}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useGameStore } from "@/lib/store";
 import { AudioEngine } from "@/lib/audio";
 import { domBurst } from "@/lib/dom-fx";
@@ -30,10 +30,17 @@ export default function GameApp() {
   const meta = useGameStore((s) => s.meta);
   const gameOver = useGameStore((s) => s.gameOver);
   const overSfxDone = useRef(false);
+  const [booted, setBooted] = useState(false);
 
   useEffect(() => {
     hydrate();
   }, [hydrate]);
+
+  // 启动画面:加载进度条至少展示一小段时间,避免本地加载过快时一闪而过
+  useEffect(() => {
+    const t = setTimeout(() => setBooted(true), 800);
+    return () => clearTimeout(t);
+  }, []);
 
   useEffect(() => {
     if (!hydrated) return;
@@ -102,18 +109,20 @@ export default function GameApp() {
     }
   }, [screen, gameOver]);
 
-  if (!hydrated) {
+  if (!hydrated || !booted) {
     return (
       <div id="app">
-        <div id="shake-wrap">
-          <section className="screen active" id="scr-title">
-            <div className="title-inner">
-              <div className="title-logo">
-                <div className="logo-top">宝可驾</div>
-                <div className="logo-sub">交 规 地 牢</div>
-              </div>
+        <div className="loading-screen">
+          <div className="loading-inner">
+            <div className="title-logo">
+              <div className="logo-top">宝可驾</div>
+              <div className="logo-sub">交 规 地 牢</div>
             </div>
-          </section>
+            <div className="loading-bar">
+              <div className="loading-bar-fill" />
+            </div>
+            <div className="loading-text">加载中…</div>
+          </div>
         </div>
       </div>
     );
