@@ -23,6 +23,7 @@ export default function ExamScreen() {
     wrongCount: number;
     pass: boolean;
     stoppedEarly?: boolean; // 答错扣满后提前终止
+    unanswered?: number; // 提前交卷时未答题数(按错误计分)
   } | null>(null);
   const recordedRef = useRef(false);
 
@@ -48,13 +49,20 @@ export default function ExamScreen() {
   const submit = (sess: ExamSession) => {
     if (recordedRef.current) return;
     recordedRef.current = true;
+    // 提前交卷:未答题按错误处理,计入总分(gradeExam 已把未答算作错误)
     const { score, wrongIds } = gradeExam(sess);
     // 错题本语义统一:答对即移出,把本次答对的题 id 一并传入
     const correctIds = sess.qs
       .filter((q, i) => sess.picked[i] != null && sess.picked[i] === q.ans)
       .map((q) => q.id);
+    const unanswered = sess.picked.filter((p) => p == null).length;
     recordExamResult(score, wrongIds, correctIds);
-    setResult({ score, wrongCount: wrongIds.length, pass: isExamPass(score) });
+    setResult({
+      score,
+      wrongCount: wrongIds.length,
+      pass: isExamPass(score),
+      unanswered,
+    });
     AudioEngine.sfx(isExamPass(score) ? "fanfare" : "defeat");
   };
 
@@ -108,11 +116,18 @@ export default function ExamScreen() {
             <div className="over-stat">
               错题: <b>{result.wrongCount}</b> 道 (已记入错题本)
             </div>
+            {result.unanswered ? (
+              <div className="over-stat">
+                未答: <b>{result.unanswered}</b> 道 (按错误计分)
+              </div>
+            ) : null}
           </div>
           <div className="over-sub">
             {result.stoppedEarly
               ? "答错满 11 题(得分已降至 89),本次模拟已终止"
-              : "错题已计入错题本 · 本次答对的题已从错题本移出"}
+              : result.unanswered
+                ? `提前交卷: ${result.unanswered} 道未答题已按错误计分 · 错题已计入错题本`
+                : "错题已计入错题本 · 本次答对的题已从错题本移出"}
           </div>
           <div className="over-btns">
             <button className="btn btn-primary" onClick={() => setScreen("study")}>
@@ -160,7 +175,20 @@ export default function ExamScreen() {
       setSession((s) => (s ? { ...s, idx: i } : s));
     };
 
-    const submitNow = () => submit(session);
+    const unanswered = session.picked.filter((p) => p == null).length;
+    const submitNow = () => {
+      // 有未答题时先确认:未答题按错误处理计入总成绩
+      if (unanswered > 0) {
+        if (
+          !window.confirm(
+            `还有 ${unanswered} 题未作答,未答题将按错误处理计入总成绩。确定交卷吗？`,
+          )
+        ) {
+          return;
+        }
+      }
+      submit(session);
+    };
 
     return (
       <section className="screen active" id="scr-exam">
@@ -280,7 +308,7 @@ export default function ExamScreen() {
           <div className="over-stat">合格线: {EXAM_CONST.PASS_LINE} 分</div>
         </div>
         <div className="over-sub">
-          每题作答后不可修改,答错扣 1 分;得分扣至 89 分立即判不合格并终止。错题计入错题本。
+          每题作答后不可修改,答错扣 1 分;得分扣至 89 分立即判不合格并终止。可提前交卷,未答题按错误计分。错题计入错题本。
         </div>
         <div className="over-btns">
           <button
