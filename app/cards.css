@@ -42,7 +42,7 @@
 /* 3D 战斗场景:固定高度、不透明实心舞台(上浅下深:天空→地面) */
 #scr-battle .battle-stage{flex:none;height:min(54vh,520px)}
 @media (max-height:740px){
-  #scr-battle .battle-stage{height:min(42vh,340px)}
+  #scr-battle .battle-stage{height:min(36vh,300px)}
   .battle-q-text{min-height:32px;font-size:14px}
   .battle-options{gap:6px}
   .battle-opt-btn{padding:9px 10px;font-size:13px}
@@ -96,7 +96,7 @@
 .hand-area{background:linear-gradient(180deg,rgba(242,248,255,.9),rgba(231,242,253,.94))}
 
 /* ---------- 战斗屏(卡牌版布局) ---------- */
-#scr-battle .battle-topbar{position:static;display:flex;align-items:center;gap:8px;padding:calc(8px + var(--safe-t)) 12px 8px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.88)}
+#scr-battle .battle-topbar{flex:0 0 auto;position:static;display:flex;align-items:center;gap:8px;padding:calc(8px + var(--safe-t)) 12px 8px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.88)}
 .battle-combo{font-weight:900;color:var(--gold);margin-left:auto;font-size:14px}
 .battle-enemy{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 12px 4px}
 .enemy-sprite-wrap img{width:96px;height:80px;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 0 14px rgba(255,82,82,.45))}
@@ -112,7 +112,7 @@
 .battle-player-info{font-size:12px;color:var(--dim);margin-top:3px}
 
 /* ---------- 答题区 ---------- */
-.battle-q-area{flex:1 1 auto;min-height:0;overflow-y:auto;background:linear-gradient(180deg,var(--bg2),var(--bg));border-top:1px solid var(--line);padding:10px 12px;display:flex;flex-direction:column;gap:8px;transition:opacity .3s}
+.battle-q-area{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:linear-gradient(180deg,var(--bg2),var(--bg));border-top:1px solid var(--line);padding:10px 12px;display:flex;flex-direction:column;gap:8px;transition:opacity .3s}
 .battle-q-text{font-size:15px;line-height:1.55;min-height:44px}
 .battle-options{display:flex;flex-direction:column;gap:8px;counter-reset:bopt}
 .battle-opt-btn{display:flex;align-items:flex-start;gap:10px;counter-increment:bopt;width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--txt);font-size:14px;line-height:1.4;cursor:pointer;transition:.12s;font-family:inherit}
@@ -136,7 +136,7 @@
 .battle-opt-btn.reveal::before{background:var(--green);color:#04140b;border-color:var(--green)}
 
 /* ---------- 手牌 ---------- */
-.hand-area{display:flex;gap:8px;overflow-x:auto;padding:10px 12px;min-height:118px;background:linear-gradient(180deg,var(--bg),rgba(240,248,255,.85));border-top:1px solid var(--line);scroll-snap-type:x mandatory}
+.hand-area{flex:0 0 auto;display:flex;gap:8px;overflow-x:auto;padding:10px 12px;min-height:118px;background:linear-gradient(180deg,var(--bg),rgba(240,248,255,.85));border-top:1px solid var(--line);scroll-snap-type:x mandatory}
 .hand-card{flex:0 0 auto;width:96px;scroll-snap-align:start;border-radius:12px;padding:8px 6px;border:1px solid var(--line);background:linear-gradient(180deg,var(--panel2),var(--panel));text-align:center;cursor:pointer;transition:.12s;position:relative;display:flex;flex-direction:column;gap:3px}
 .hand-card:active{transform:scale(.93);border-color:var(--cyan)}
 .hand-card.unaffordable{opacity:.45;filter:grayscale(.4)}

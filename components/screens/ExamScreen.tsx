@@ -22,6 +22,7 @@ export default function ExamScreen() {
     score: number;
     wrongCount: number;
     pass: boolean;
+    stoppedEarly?: boolean; // 答错扣满后提前终止
   } | null>(null);
   const recordedRef = useRef(false);
 
@@ -57,6 +58,29 @@ export default function ExamScreen() {
     AudioEngine.sfx(isExamPass(score) ? "fanfare" : "defeat");
   };
 
+  /** 答错扣分扣到 89 分(错满 11 题)→ 立即判不合格并终止本次模拟 */
+  const failImmediately = (sess: ExamSession) => {
+    if (recordedRef.current) return;
+    recordedRef.current = true;
+    const wrongIds = sess.qs
+      .filter((q, i) => sess.picked[i] != null && sess.picked[i] !== q.ans)
+      .map((q) => q.id);
+    const correctIds = sess.qs
+      .filter((q, i) => sess.picked[i] != null && sess.picked[i] === q.ans)
+      .map((q) => q.id);
+    // 未答题目不再计入(考试已终止),得分 = 100 - 错题数 = 89
+    const score = sess.qs.length - wrongIds.length;
+    recordExamResult(score, wrongIds, correctIds);
+    setResult({
+      score,
+      wrongCount: wrongIds.length,
+      pass: false,
+      stoppedEarly: true,
+    });
+    setSession({ ...sess, done: true });
+    AudioEngine.sfx("defeat");
+  };
+
   const start = () => {
     const sess = buildExamSession(questionPool);
     if (!sess) return;
@@ -86,7 +110,9 @@ export default function ExamScreen() {
             </div>
           </div>
           <div className="over-sub">
-            错题已计入错题本 · 本次答对的题已从错题本移出
+            {result.stoppedEarly
+              ? "答错满 11 题(得分已降至 89),本次模拟已终止"
+              : "错题已计入错题本 · 本次答对的题已从错题本移出"}
           </div>
           <div className="over-btns">
             <button className="btn btn-primary" onClick={() => setScreen("study")}>
@@ -102,14 +128,23 @@ export default function ExamScreen() {
   if (session) {
     const q = session.qs[session.idx]!;
     const picked = session.picked[session.idx];
+    // 已答错题数(满分 100,答错一题扣 1 分)
+    const wrongSoFar = session.picked.filter(
+      (p, i) => p != null && p !== session.qs[i]!.ans,
+    ).length;
 
     const pick = (i: number) => {
-      setSession((s) => {
-        if (!s || s.done) return s;
-        const picked2 = [...s.picked];
-        picked2[s.idx] = i;
-        return { ...s, picked: picked2 };
-      });
+      if (picked != null) return; // 先选择后不可修改
+      const picked2 = [...session.picked];
+      picked2[session.idx] = i;
+      const next: ExamSession = { ...session, picked: picked2 };
+      setSession(next);
+      if (i !== q.ans) {
+        // 得分扣到 89 分(错满 11 题)直接判不合格并停止本次模拟
+        if (next.qs.length - (wrongSoFar + 1) <= 89) {
+          failImmediately(next);
+        }
+      }
     };
 
     const toggleMark = () => {
@@ -134,6 +169,9 @@ export default function ExamScreen() {
             <div style={{ fontWeight: 800 }}>
               科目一模拟 · {session.idx + 1}/{session.qs.length}
             </div>
+            <div style={{ fontWeight: 800, color: "var(--gold)", fontSize: 13 }}>
+              得分 {session.qs.length - wrongSoFar}
+            </div>
             <div className="exam-timer">⏱ {fmtTime(session.timeLeft)}</div>
           </div>
 
@@ -147,14 +185,21 @@ export default function ExamScreen() {
                     key={i}
                     className={
                       "battle-opt-btn" +
-                      (picked === i ? (i === q.ans ? " correct" : " wrong") : "")
+                      (picked === i ? (i === q.ans ? " correct" : " wrong") : "") +
+                      (picked != null ? " disabled" : "")
                     }
+                    disabled={picked != null}
                     onClick={() => pick(i)}
                   >
                     {opt}
                   </button>
                 ))}
               </div>
+              {picked != null && (
+                <div className="dim" style={{ textAlign: "center", padding: "4px 0 0" }}>
+                  已作答,不可修改 · 答错扣 1 分
+                </div>
+              )}
 
               <div className="set-row">
                 <button
@@ -235,7 +280,7 @@ export default function ExamScreen() {
           <div className="over-stat">合格线: {EXAM_CONST.PASS_LINE} 分</div>
         </div>
         <div className="over-sub">
-          错题将计入错题本。可标记存疑题、自由交卷。
+          每题作答后不可修改,答错扣 1 分;得分扣至 89 分立即判不合格并终止。错题计入错题本。
         </div>
         <div className="over-btns">
           <button
