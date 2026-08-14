@@ -89,15 +89,36 @@ export default function BattleScreen() {
       }
     } else {
       AudioEngine.sfx("wrong");
-      // 答错不再受伤:仅展示正确答案,1.2s 后切回出牌阶段视觉
+      // 答错不再反伤:展示正确答案(绿框高亮)900ms 后进入出牌阶段(对齐 kemu-valkyrie 流程)
       if (!res.playerDead) {
         nextTimerRef.current = setTimeout(() => {
           nextTimerRef.current = null;
+          const st = useGameStore.getState();
+          if (st.run && st.run.inBattle && st.run.turnPhase === "question") {
+            st.enterCardPhase();
+          }
           setAnswerState(null);
-        }, 1200);
+        }, 900);
       }
     }
   }, [lastAnswer]);
+
+  // 恢复被中断的作答后过渡(刷新/重连):已作答但未进入下一题/出牌阶段 → 进入出牌阶段
+  useEffect(() => {
+    if (!run?.inBattle || run.turnPhase !== "question" || !run.questionAnswered) return;
+    const t = setTimeout(() => {
+      const st = useGameStore.getState();
+      if (
+        st.run?.inBattle &&
+        st.run.turnPhase === "question" &&
+        st.run.questionAnswered
+      ) {
+        st.enterCardPhase();
+      }
+    }, 900);
+    return () => clearTimeout(t);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [run?.questionAnswered, run?.turnPhase, run?.inBattle]);
 
   // 答题倒计时:每题 15s,超时按答错处理(节奏压力 + 防挂机)
   useEffect(() => {
@@ -177,8 +198,6 @@ export default function BattleScreen() {
 
   // 捕获弹窗/投球动画期间保持战斗场景存活(3D canvas 不卸载)
   const captureOpen = modal?.kind === "capture" || captureAnimating;
-  const revealWrong = !!answerState && !answerState.correct;
-  const defeatOpen = !!run?.gameOver;
   if (!run || !run.enemyPkm) return null;
   if (!run.inBattle && !captureOpen) return null;
 
@@ -188,7 +207,7 @@ export default function BattleScreen() {
   const atk = getPlayerAtk(meta.metaAtkLv);
 
   const handleAnswer = (idx: number) => {
-    if (!run.currentQ || run.turnPhase !== "question") return;
+    if (!run.currentQ || run.turnPhase !== "question" || answerState) return;
     answer(idx);
   };
 
@@ -350,32 +369,28 @@ export default function BattleScreen() {
         </div>
       </div>
 
-      {/* 答题区(捕获动画期间隐藏,露出 3D 舞台) */}
+      {/* 答题区 */}
       <div
         className="battle-q-area"
-        style={{
-          opacity: run.turnPhase === "card" && !revealWrong ? 0.4 : 1,
-          display: captureOpen || defeatOpen ? "none" : undefined,
-        }}
+        style={{ opacity: run.turnPhase === "card" ? 0.4 : 1 }}
       >
-        {run.turnPhase === "question" && !answerState && (
-          <div className="battle-timer">
-            <div
-              className={`battle-timer-fill${qLeft < 5000 ? " low" : ""}`}
-              style={{ width: `${(qLeft / QUESTION_TIME_MS) * 100}%` }}
-            />
-            <span className="battle-timer-text">
-              ⏱ {Math.max(0, Math.ceil(qLeft / 1000))}s
-            </span>
-          </div>
-        )}
-        {run.turnPhase === "question" || revealWrong ? (
-          <div className="q-wrap" key={run.currentQ?.id ?? "q"}>
-            <div className="q-meta">
-              <div className="bt-item">⚡ 已获 {run.turnCorrect} 能量</div>
-            </div>
+        {run.turnPhase === "question" ? (
+          <>
+            {!answerState && (
+              <div className={`battle-timer${qLeft < 5000 ? " low" : ""}`}>
+                <div
+                  className="battle-timer-fill"
+                  style={{ width: `${(qLeft / QUESTION_TIME_MS) * 100}%` }}
+                />
+                <span className="battle-timer-text">
+                  ⏱ {Math.max(0, Math.ceil(qLeft / 1000))}s
+                </span>
+              </div>
+            )}
             <div className="battle-q-text">
-              {run.currentQ ? run.currentQ.q : "准备答题..."}
+              {run.currentQ
+                ? `[⚡已获得${run.turnCorrect}能量] ${run.currentQ.q}`
+                : "准备答题..."}
             </div>
             <div className="battle-options">
               {run.currentQ?.opts.map((opt, i) => (
@@ -400,26 +415,14 @@ export default function BattleScreen() {
                 </button>
               ))}
             </div>
-          </div>
+          </>
         ) : (
           <div className="battle-q-text">📝 出牌阶段 — 点击手牌使用技能</div>
         )}
       </div>
 
-      {/* 手牌(捕获动画期间隐藏) */}
-      <div
-        className="hand-area"
-        id="hand-area"
-        style={{
-          display:
-            captureOpen ||
-            defeatOpen ||
-            revealWrong ||
-            (run.turnPhase === "question" && handCards.length === 0)
-              ? "none"
-              : undefined,
-        }}
-      >
+      {/* 手牌 */}
+      <div className="hand-area" id="hand-area">
         {handCards.length === 0 && run.turnPhase === "card" ? (
           <div
             style={{
@@ -455,11 +458,8 @@ export default function BattleScreen() {
         )}
       </div>
 
-      {/* 底部控制(捕获动画期间隐藏) */}
-      <div
-        className="battle-actions"
-        style={{ display: captureOpen || defeatOpen || revealWrong ? "none" : undefined }}
-      >
+      {/* 底部控制 */}
+      <div className="battle-actions">
         <div className="energy-display">
           ⚡ {run.energy}
           <span className="energy-orbs">

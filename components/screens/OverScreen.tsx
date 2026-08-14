@@ -6,6 +6,7 @@ import { AudioEngine } from "@/lib/audio";
 export default function OverScreen() {
   const gameOver = useGameStore((s) => s.gameOver);
   const setScreen = useGameStore((s) => s.setScreen);
+  const newRun = useGameStore((s) => s.newRun);
 
   if (!gameOver) return null;
 
@@ -46,7 +47,16 @@ export default function OverScreen() {
             className="btn btn-primary"
             onClick={() => {
               AudioEngine.sfx("click");
-              setScreen("starter");
+              // 与标题页一致:仅首次游玩选择初始宝可梦,之后直接用现有队伍开局
+              const st = useGameStore.getState();
+              const firstTime =
+                Object.keys(st.meta.collected).length === 0 &&
+                st.meta.team.length === 0;
+              if (firstTime) {
+                setScreen("starter");
+              } else {
+                newRun();
+              }
             }}
           >
             🎮 再来一局

@@ -369,6 +369,7 @@ export function answerBattle(
 
   const correct = idx === q.ans;
   run.totalAnswered++;
+  run.questionAnswered = true; // 作答后锁定本题,防重复作答(下一题/出牌阶段重置)
 
   const res: AnswerBattleResult = {
     correct,
@@ -396,10 +397,9 @@ export function answerBattle(
 
     if (run.enemyHp <= 0) res.enemyDead = true;
   } else {
-    // 答错不再反伤:仅重置连击并进入出牌阶段(伤害只来自回合结束的敌方攻击)
+    // 答错不再反伤:仅重置连击;停留答题阶段展示正确答案,由界面延迟后进入出牌阶段
     run.combo = 0;
     res.combo = 0;
-    enterCardPhase(run);
   }
 
   return res;

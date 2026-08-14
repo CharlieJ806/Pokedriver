@@ -865,7 +865,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
   answer: (idx) => {
     const run0 = get().run;
     const meta0 = get().meta;
-    if (!run0 || run0.turnPhase !== "question" || run0.gameOver) return null;
+    if (!run0 || run0.turnPhase !== "question" || run0.questionAnswered || run0.gameOver) return null;
     const run = cloneRun(run0);
     const meta = cloneMeta(meta0);
     const q = run.currentQ;
@@ -918,6 +918,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const run0 = get().run;
     if (!run0 || run0.turnPhase !== "question") return;
     const run = cloneRun(run0);
+    run.questionAnswered = false; // 新题解锁作答
     const q = pickQuestion(run, get().questionPool);
     if (!q) return;
     set({ run });
