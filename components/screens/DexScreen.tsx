@@ -26,7 +26,19 @@ export default function DexScreen() {
 
   return (
     <section className="screen active" id="scr-dex">
-      <div className="title-inner" style={{ justifyContent: "flex-start", paddingTop: 24 }}>
+      <div className="title-inner" style={{ justifyContent: "flex-start", paddingTop: 16 }}>
+        <div className="set-row">
+          <button
+            className="btn btn-ghost"
+            onClick={() => {
+              AudioEngine.sfx("click");
+              setScreen("title");
+            }}
+          >
+            ← 返回
+          </button>
+          <div style={{ fontWeight: 800 }}>📖 图鉴</div>
+        </div>
         <div className="dex-progress">
           已收集: {collectedCount} / {POKEMON.length}
         </div>
@@ -105,15 +117,6 @@ export default function DexScreen() {
             );
           })}
         </div>
-        <button
-          className="btn-ghost"
-          onClick={() => {
-            AudioEngine.sfx("click");
-            setScreen("title");
-          }}
-        >
-          ← 返回
-        </button>
       </div>
     </section>
   );
