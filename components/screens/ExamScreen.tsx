@@ -63,6 +63,8 @@ export default function ExamScreen() {
       pass: isExamPass(score),
       unanswered,
     });
+    // 结束考试:done=true 才会渲染结算页(倒计时 effect 也会随之停止)
+    setSession({ ...sess, done: true });
     AudioEngine.sfx(isExamPass(score) ? "fanfare" : "defeat");
   };
 
