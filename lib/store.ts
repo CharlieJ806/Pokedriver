@@ -22,7 +22,7 @@ import {
   switchToNextAlive,
 } from "./battle";
 import { applyNodeSelection, generateMapNodes } from "./map";
-import { ALL_CARDS, STARTER_CARD_IDS } from "./cards";
+import { ALL_CARDS, STARTER_CARD_IDS, findCard } from "./cards";
 import {
   getMaxHpFromMeta,
   getPkmMaxHp,
@@ -635,7 +635,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     run.deck.push(cardId);
     set({ run });
     persistRun(run);
-    get().showToast(`购买: ${cardId}`, 1500);
+    get().showToast(`购买: ${findCard(cardId)?.name ?? cardId}`, 1500);
   },
 
   removeDeckCard: () => {
@@ -658,7 +658,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     run.hand = run.hand.filter((id) => id !== removed);
     set({ run });
     persistRun(run);
-    get().showToast(`移除: ${removed}`, 1500);
+    get().showToast(`移除: ${findCard(removed)?.name ?? removed}`, 1500);
   },
 
   openRest: () => {
@@ -1027,7 +1027,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     // 奖励来自战斗胜利:关闭模态并回到地图(否则 screen 停在 battle 导致空白)
     set({ run, modal: null, screen: "map", prevScreen: get().screen });
     persistRun(run);
-    get().showToast(`获得卡片: ${cardId}`, 1800);
+    get().showToast(`获得卡片: ${findCard(cardId)?.name ?? cardId}`, 1800);
   },
 
   skipReward: () => {

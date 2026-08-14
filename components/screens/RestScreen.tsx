@@ -41,24 +41,6 @@ export default function RestScreen() {
             🔧 特训（回复+养成金）
           </button>
           <button
-            className="btn"
-            onClick={() => {
-              AudioEngine.sfx("heal");
-              restHeal();
-            }}
-          >
-            🛌 休息 (回复30%HP)
-          </button>
-          <button
-            className="btn"
-            onClick={() => {
-              AudioEngine.sfx("heal");
-              restTrain();
-            }}
-          >
-            🔧 特训（回复+养成金）
-          </button>
-          <button
             className="btn btn-primary"
             onClick={() => {
               AudioEngine.sfx("click");
