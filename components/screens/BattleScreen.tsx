@@ -89,12 +89,7 @@ export default function BattleScreen() {
       }
     } else {
       AudioEngine.sfx("wrong");
-      // 答错反伤 → 敌方攻击动画
-      if (BattleFX.ok) {
-        BattleFX.attack("enemy", {});
-      }
-      spawnDmg(document.getElementById("battle-stage"), 28, 55, `-${res.counterDmg}`, "#ff0044");
-      // 答错:保留高亮展示正确答案,1.2s 后切回出牌阶段视觉
+      // 答错不再受伤:仅展示正确答案,1.2s 后切回出牌阶段视觉
       if (!res.playerDead) {
         nextTimerRef.current = setTimeout(() => {
           nextTimerRef.current = null;
@@ -363,16 +358,19 @@ export default function BattleScreen() {
           display: captureOpen || defeatOpen ? "none" : undefined,
         }}
       >
+        {run.turnPhase === "question" && !answerState && (
+          <div className="battle-timer">
+            <div
+              className={`battle-timer-fill${qLeft < 5000 ? " low" : ""}`}
+              style={{ width: `${(qLeft / QUESTION_TIME_MS) * 100}%` }}
+            />
+            <span className="battle-timer-text">
+              ⏱ {Math.max(0, Math.ceil(qLeft / 1000))}s
+            </span>
+          </div>
+        )}
         {run.turnPhase === "question" || revealWrong ? (
           <div className="q-wrap" key={run.currentQ?.id ?? "q"}>
-            {run.turnPhase === "question" && !answerState && (
-              <div className="q-timer">
-                <div
-                  className={`q-timer-fill${qLeft < 5000 ? " low" : ""}`}
-                  style={{ width: `${(qLeft / QUESTION_TIME_MS) * 100}%` }}
-                />
-              </div>
-            )}
             <div className="q-meta">
               <div className="bt-item">⚡ 已获 {run.turnCorrect} 能量</div>
             </div>

@@ -396,17 +396,10 @@ export function answerBattle(
 
     if (run.enemyHp <= 0) res.enemyDead = true;
   } else {
+    // 答错不再反伤:仅重置连击并进入出牌阶段(伤害只来自回合结束的敌方攻击)
     run.combo = 0;
     res.combo = 0;
-
-    const counterDmg = Math.floor(run.enemyBaseDamage * 0.5);
-    damagePlayer(run, counterDmg);
-    res.counterDmg = counterDmg;
-    if (run.hp <= 0) {
-      res.playerDead = true;
-    } else {
-      enterCardPhase(run);
-    }
+    enterCardPhase(run);
   }
 
   return res;

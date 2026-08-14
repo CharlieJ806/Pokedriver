@@ -905,7 +905,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     persistMeta(meta);
     notifyAchievements(get, newlyAch);
 
-    // 答题击杀敌人 → 结束战斗;答错反伤致死 → 败北(迁移自 standalone handleBattleAnswer)
+    // 答题击杀敌人 → 结束战斗(答错不再反伤;playerDead 分支仅防御性保留)
     if (res.enemyDead) {
       get().endBattle(true);
     } else if (res.playerDead) {

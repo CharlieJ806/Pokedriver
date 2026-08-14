@@ -40,19 +40,23 @@
 .dc-rarity{font-size:9px;color:var(--dim)}
 /* 战斗精灵与信息区 */
 /* 3D 战斗场景:固定高度、不透明实心舞台(上浅下深:天空→地面) */
-#scr-battle .battle-stage{flex:none;height:min(54vh,520px)}
-@media (max-height:740px){
-  #scr-battle .battle-stage{height:min(36vh,300px)}
-  .battle-q-text{min-height:32px;font-size:14px}
+#scr-battle .battle-stage{flex:none;height:min(54vh,520px);display:flex;flex-direction:column}
+@media (max-height:640px){
+  #scr-battle .battle-stage{height:min(44vh,360px)}
+  .hand-area{min-height:84px;padding:8px 10px}
+  .battle-q-area{padding:14px 10px 8px;gap:6px}
+  .battle-q-text{min-height:28px;font-size:14px}
   .battle-options{gap:6px}
-  .battle-opt-btn{padding:9px 10px;font-size:13px}
-  .hand-area{min-height:100px;padding:8px 10px}
+  .battle-opt-btn{padding:9px 12px;font-size:13px}
+  .battle-actions{padding:4px 10px calc(6px + var(--safe-b))}
 }
 #battle-fx-canvas{
   position:absolute;inset:0;width:100%;height:100%;display:block;z-index:0;
   background:linear-gradient(180deg,#cfe6f8 0%,#e9f5fe 36%,#a9cfe8 72%,#7fb5dd 100%);
 }
 .battle-stage.fx-3d > *{position:relative;z-index:1}
+/* 经典对战布局:敌方信息置顶,队伍槽+我方信息置底 */
+.battle-stage .team-bar{margin-top:auto}
 /* 经典对战布局:敌方信息贴右、我方贴左 */
 .battle-stage.fx-3d .battle-enemy{align-items:flex-end}
 .battle-stage.fx-3d .enemy-info{
@@ -62,13 +66,17 @@
 .battle-stage.fx-3d .battle-player{
   background:none;border-top:none;justify-content:flex-start;padding:8px 12px;
 }
-@media (max-width:640px){
-  /* 移动端舞台较矮,玩家信息栏定位到底部,避免遮挡 3D 玩家精灵 */
-  .battle-stage.fx-3d .battle-player{position:absolute;left:0;right:0;bottom:0;}
-}
 .battle-stage.fx-3d .player-info{
   background:rgba(255,255,255,.72);border:1px solid var(--line);border-radius:12px;
   padding:6px 12px;width:auto;text-align:left;flex:none;
+}
+/* 移动端:信息框降透明并收紧,避免遮挡 3D 角色模型 */
+@media (max-width:480px){
+  .battle-stage.fx-3d .player-info,
+  .battle-stage.fx-3d .enemy-info{
+    background:rgba(255,255,255,.4);
+    padding:4px 8px;
+  }
 }
 .enemy-sprite{width:96px;height:80px;object-fit:contain;image-rendering:pixelated}
 .player-info{flex:1;text-align:left}
@@ -112,7 +120,21 @@
 .battle-player-info{font-size:12px;color:var(--dim);margin-top:3px}
 
 /* ---------- 答题区 ---------- */
-.battle-q-area{flex:1 1 auto;min-height:0;overflow-y:auto;-webkit-overflow-scrolling:touch;overscroll-behavior:contain;background:linear-gradient(180deg,var(--bg2),var(--bg));border-top:1px solid var(--line);padding:10px 12px;display:flex;flex-direction:column;gap:8px;transition:opacity .3s}
+.battle-q-area{position:relative;background:linear-gradient(180deg,var(--bg2),var(--bg));border-top:1px solid var(--line);padding:16px 12px 10px;display:flex;flex-direction:column;gap:8px;transition:opacity .3s}
+/* 答题倒计时条:悬浮于答题区顶部,不占布局高度 */
+.battle-timer{
+  position:absolute;top:0;left:0;right:0;height:14px;z-index:2;
+  background:rgba(16,32,56,.12);border-radius:0 0 6px 6px;overflow:hidden;
+}
+.battle-timer-fill{
+  position:absolute;inset:0;border-radius:0 0 6px 6px;
+  background:linear-gradient(90deg,var(--cyan),var(--green));transition:width .1s linear;
+}
+.battle-timer-fill.low{background:linear-gradient(90deg,#ff5f6d,var(--red))}
+.battle-timer-text{
+  position:absolute;top:0;right:6px;font-size:10px;font-weight:800;color:#fff;
+  text-shadow:0 1px 2px rgba(0,0,0,.55);line-height:14px;pointer-events:none;
+}
 .battle-q-text{font-size:15px;line-height:1.55;min-height:44px}
 .battle-options{display:flex;flex-direction:column;gap:8px;counter-reset:bopt}
 .battle-opt-btn{display:flex;align-items:flex-start;gap:10px;counter-increment:bopt;width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--txt);font-size:14px;line-height:1.4;cursor:pointer;transition:.12s;font-family:inherit}

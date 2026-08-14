@@ -164,7 +164,7 @@ body{
 .lg-battle{background:var(--cyan)}.lg-elite{background:var(--gold)}.lg-shop{background:var(--green)}.lg-rest{background:var(--purple)}.lg-boss{background:var(--rl)}
 
 /* ---------- 战斗 ---------- */
-#scr-battle{flex-direction:column;overflow-y:auto}
+#scr-battle{flex-direction:column}
 .battle-stage{position:relative;flex:1;min-height:0;background:rgba(240,248,255,.7)}
 #battle-canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 #battle-fallback{position:absolute;inset:0}
@@ -249,7 +249,7 @@ body{
 .opt-btn.reveal{border-color:var(--green)}
 .opt-btn.reveal .opt-key{background:var(--green);color:#04140b}
 .q-opts.locked .opt-btn{pointer-events:none}
-.battle-actions{flex:0 0 auto;display:flex;gap:10px;align-items:center;justify-content:space-between;padding:10px 12px calc(10px + var(--safe-b))}
+.battle-actions{flex:0 0 auto;display:flex;gap:10px;align-items:center;justify-content:space-between;padding:6px 12px calc(8px + var(--safe-b))}
 
 /* ---------- 商店/休息 ---------- */
 .shop-list,.rest-list{flex:1;overflow-y:auto;padding:16px;display:flex;flex-direction:column;gap:12px}
