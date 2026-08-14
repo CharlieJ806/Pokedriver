@@ -25,8 +25,8 @@
   .title-inner{width:min(94vw,1100px)}               /* 菜单屏(养成/抽卡/题库等) */
   #scr-dex .title-inner{width:min(97vw,1800px)}      /* 图鉴:接近满宽网格 */
   .map-inner{max-width:none}                          /* 地图:全宽 */
-  #scr-battle .battle-stage{max-width:min(96vw,900px);width:100%;margin-left:auto;margin-right:auto}
-  #scr-battle .battle-topbar,
+  #scr-battle .battle-stage,
+  #scr-battle .battle-topbar{max-width:min(96vw,900px);width:100%;margin-left:auto;margin-right:auto}
   #scr-battle .battle-q-area,
   #scr-battle .hand-area,
   #scr-battle .battle-actions{max-width:min(96vw,720px);width:100%;margin-left:auto;margin-right:auto}
@@ -35,14 +35,18 @@
 /* title-inner 的 align-items:center 会让 flex 子项收缩到内容宽度,
    需要撑满的容器必须显式 width:100%(否则 grid 塌成一列) */
 .dex-grid,.dex-filter,.bank-list,.deck-pool,.deck-active,.exam-grid,.study-cards,.gacha-result,.title-menu,.title-menu-extra,.set-card,.rest-card,.over-btns,
-.set-row,.set-note,.bank-pagination,.dex-progress,.over-stats{width:100%}
+.set-row,.set-note,.bank-pagination,.dex-progress,.over-stats,.ach-grid{width:100%}
 /* 图鉴稀有度标签 */
 .dc-rarity{font-size:9px;color:var(--dim)}
 /* 战斗精灵与信息区 */
 /* 3D 战斗场景:固定高度、不透明实心舞台(上浅下深:天空→地面) */
 #scr-battle .battle-stage{flex:none;height:min(54vh,520px)}
-@media (max-height:640px){
-  #scr-battle .battle-stage{height:min(44vh,360px)}
+@media (max-height:740px){
+  #scr-battle .battle-stage{height:min(42vh,340px)}
+  .battle-q-text{min-height:32px;font-size:14px}
+  .battle-options{gap:6px}
+  .battle-opt-btn{padding:9px 10px;font-size:13px}
+  .hand-area{min-height:100px;padding:8px 10px}
 }
 #battle-fx-canvas{
   position:absolute;inset:0;width:100%;height:100%;display:block;z-index:0;
@@ -82,7 +86,7 @@
 #scr-map::before{background-image:linear-gradient(rgba(255,255,255,.55),rgba(255,255,255,.85)),url('/bg/map.webp')}
 #scr-battle::before{background-image:linear-gradient(rgba(255,255,255,.6),rgba(255,255,255,.88)),url('/bg/battle.webp')}
 #scr-starter::before,#scr-dex::before,#scr-review::before,#scr-bank::before,#scr-train::before,
-#scr-gacha::before,#scr-deckbuild::before,#scr-settings::before,#scr-study::before,
+#scr-gacha::before,#scr-deckbuild::before,#scr-achievements::before,#scr-settings::before,#scr-study::before,
 #scr-exam::before,#scr-wrong::before,#scr-over::before,#scr-shop::before,#scr-rest::before{
   background-image:linear-gradient(rgba(255,255,255,.62),rgba(255,255,255,.9)),url('/bg/menu.webp')
 }
@@ -92,7 +96,7 @@
 .hand-area{background:linear-gradient(180deg,rgba(242,248,255,.9),rgba(231,242,253,.94))}
 
 /* ---------- 战斗屏(卡牌版布局) ---------- */
-#scr-battle .battle-topbar{position:static;display:flex;align-items:center;padding:calc(8px + var(--safe-t)) 12px 8px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.88)}
+#scr-battle .battle-topbar{position:static;display:flex;align-items:center;gap:8px;padding:calc(8px + var(--safe-t)) 12px 8px;border-bottom:1px solid var(--line);background:rgba(255,255,255,.88)}
 .battle-combo{font-weight:900;color:var(--gold);margin-left:auto;font-size:14px}
 .battle-enemy{position:relative;display:flex;flex-direction:column;align-items:center;gap:6px;padding:14px 12px 4px}
 .enemy-sprite-wrap img{width:96px;height:80px;object-fit:contain;image-rendering:pixelated;filter:drop-shadow(0 0 14px rgba(255,82,82,.45))}
@@ -108,7 +112,7 @@
 .battle-player-info{font-size:12px;color:var(--dim);margin-top:3px}
 
 /* ---------- 答题区 ---------- */
-.battle-q-area{background:linear-gradient(180deg,var(--bg2),var(--bg));border-top:1px solid var(--line);padding:10px 12px;display:flex;flex-direction:column;gap:8px;transition:opacity .3s}
+.battle-q-area{flex:1 1 auto;min-height:0;overflow-y:auto;background:linear-gradient(180deg,var(--bg2),var(--bg));border-top:1px solid var(--line);padding:10px 12px;display:flex;flex-direction:column;gap:8px;transition:opacity .3s}
 .battle-q-text{font-size:15px;line-height:1.55;min-height:44px}
 .battle-options{display:flex;flex-direction:column;gap:8px;counter-reset:bopt}
 .battle-opt-btn{display:flex;align-items:flex-start;gap:10px;counter-increment:bopt;width:100%;padding:11px 12px;border-radius:12px;border:1px solid var(--line);background:var(--panel2);color:var(--txt);font-size:14px;line-height:1.4;cursor:pointer;transition:.12s;font-family:inherit}
@@ -296,3 +300,31 @@
 .dc-img{width:44px;height:36px;object-fit:contain;image-rendering:pixelated}
 .dex-cell.collected{cursor:pointer}
 .dex-cell.locked{opacity:.5}
+
+/* ---------- 进化 ---------- */
+.evo-box{margin-top:12px;padding:10px 12px;border:1px solid var(--gold);border-radius:12px;
+  background:rgba(217,146,0,.07);display:flex;flex-direction:column;gap:8px}
+.evo-info{font-size:12px;color:var(--txt);font-weight:700;line-height:1.5}
+.evo-info .evo-exp{color:var(--gold);font-weight:800}
+.evo-bar{height:8px;border-radius:4px;background:var(--panel2);border:1px solid var(--line);overflow:hidden}
+.evo-bar i{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#ffe259,#ffa751);transition:width .3s}
+
+/* ---------- 成就 ---------- */
+.ach-grid{display:flex;flex-direction:column;gap:10px}
+.ach-cell{display:flex;gap:12px;align-items:center;padding:12px 14px;border:1px solid var(--line);
+  border-radius:14px;background:var(--panel)}
+.ach-cell.done{border-color:var(--gold);background:linear-gradient(135deg,#fff8e6,var(--panel));
+  box-shadow:0 0 14px rgba(217,146,0,.14)}
+.ach-cell.locked{opacity:.55}
+.ach-icon{font-size:28px;flex:0 0 auto}
+.ach-body{flex:1;min-width:0}
+.ach-name{font-weight:800;font-size:14px}
+.ach-cell.done .ach-name{color:var(--gold)}
+.ach-desc{font-size:11px;color:var(--dim);margin-top:2px}
+.ach-prog{font-size:11px;color:var(--cyan);margin-top:4px;font-weight:700}
+.ach-cell.done .ach-prog{color:var(--green)}
+
+/* ---------- 战斗答题节奏 ---------- */
+.q-wrap{display:flex;flex-direction:column;gap:8px;animation:qIn .28s ease}
+.q-meta{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+@keyframes qIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}

@@ -3,6 +3,7 @@
 import { useRef } from "react";
 import { useGameStore } from "@/lib/store";
 import { parseImportedQuestions } from "@/lib/questions";
+import { exportSaveBundle, importSaveBundle } from "@/lib/save";
 import { AudioEngine } from "@/lib/audio";
 
 export default function SettingsScreen() {
@@ -13,6 +14,43 @@ export default function SettingsScreen() {
   const importQuestions = useGameStore((s) => s.importQuestions);
   const showToast = useGameStore((s) => s.showToast);
   const fileRef = useRef<HTMLInputElement>(null);
+  const saveFileRef = useRef<HTMLInputElement>(null);
+
+  const handleExportSave = () => {
+    try {
+      const blob = new Blob([exportSaveBundle()], {
+        type: "application/json",
+      });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      const d = new Date();
+      const pad = (n: number) => String(n).padStart(2, "0");
+      a.href = url;
+      a.download = `pokedriver-save-${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}-${pad(d.getHours())}${pad(d.getMinutes())}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      showToast("存档已导出", 1500);
+    } catch {
+      showToast("导出失败", 1500);
+    }
+  };
+
+  const handleImportSave = (file: File | undefined) => {
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      if (!window.confirm("导入会覆盖当前存档,确定继续吗？")) return;
+      const res = importSaveBundle(String(ev.target?.result ?? ""));
+      if (!res.ok) {
+        showToast(res.error ?? "导入失败", 1800);
+        return;
+      }
+      window.location.reload();
+    };
+    reader.readAsText(file);
+  };
 
   const handleImport = (file: File | undefined) => {
     if (!file) return;
@@ -97,6 +135,39 @@ export default function SettingsScreen() {
             style={{ display: "none" }}
             onChange={(e) => {
               handleImport(e.target.files?.[0]);
+              e.target.value = "";
+            }}
+          />
+        </div>
+
+        <div className="set-row">
+          <span>💾 存档导出</span>
+          <button
+            className="btn-mini"
+            onClick={() => {
+              AudioEngine.sfx("click");
+              handleExportSave();
+            }}
+          >
+            导出文件
+          </button>
+        </div>
+
+        <div className="set-row">
+          <span>📂 存档导入</span>
+          <button
+            className="btn-mini"
+            onClick={() => saveFileRef.current?.click()}
+          >
+            选择文件
+          </button>
+          <input
+            ref={saveFileRef}
+            type="file"
+            accept=".json,application/json"
+            style={{ display: "none" }}
+            onChange={(e) => {
+              handleImportSave(e.target.files?.[0]);
               e.target.value = "";
             }}
           />

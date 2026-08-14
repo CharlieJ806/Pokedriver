@@ -5,6 +5,7 @@ import { POKEMON } from "@/data";
 import { useGameStore } from "@/lib/store";
 import { MAX_TEAM_SIZE, RARITY_NAMES } from "@/data/constants";
 import { getPkmName } from "@/lib/formulas";
+import { evolveCost, getEvoTargets } from "@/data/evolutions";
 import { ICON } from "@/lib/icon";
 import { AudioEngine } from "@/lib/audio";
 import type { Rarity } from "@/lib/types";
@@ -111,6 +112,11 @@ export default function DexScreen() {
                 <span className="dc-name">
                   {collected ? p.c : "???"}
                   {inTeam ? " ⭐" : ""}
+                  {collected &&
+                  evolveCost(p.id) > 0 &&
+                  ((meta.pkmExp || {})[String(p.id)] || 0) >= evolveCost(p.id)
+                    ? " ✨"
+                    : ""}
                 </span>
                 <span className="dc-rarity">{RARITY_NAMES[p.r]}</span>
               </button>

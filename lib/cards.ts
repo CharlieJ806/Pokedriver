@@ -5,6 +5,7 @@ import type {
   EnemyStatus,
   StatusType,
 } from "./types";
+import { ENEMY_WEAK_FLOOR } from "@/data/constants";
 
 /* ============ 战斗上下文(applyCardFx 操作的可变对象) ============ */
 
@@ -280,7 +281,11 @@ export function applyCardFx(card: CardDef, ctx: BattleCtx): CardFxEvent[] {
   }
   if (fx.defMult) ctx.playerDefMult *= fx.defMult;
   if (fx.enemyWeak) {
-    ctx.enemyAtkMult *= 1 - fx.enemyWeak;
+    // 有回合限制的减益(回合结束结算后重置),叠加有下限:敌方攻击最低降至 40%
+    ctx.enemyAtkMult = Math.max(
+      ENEMY_WEAK_FLOOR,
+      ctx.enemyAtkMult * (1 - fx.enemyWeak),
+    );
     events.push({ type: "weak", amount: fx.enemyWeak });
   }
 

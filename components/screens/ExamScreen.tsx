@@ -48,7 +48,11 @@ export default function ExamScreen() {
     if (recordedRef.current) return;
     recordedRef.current = true;
     const { score, wrongIds } = gradeExam(sess);
-    recordExamResult(score, wrongIds);
+    // 错题本语义统一:答对即移出,把本次答对的题 id 一并传入
+    const correctIds = sess.qs
+      .filter((q, i) => sess.picked[i] != null && sess.picked[i] === q.ans)
+      .map((q) => q.id);
+    recordExamResult(score, wrongIds, correctIds);
     setResult({ score, wrongCount: wrongIds.length, pass: isExamPass(score) });
     AudioEngine.sfx(isExamPass(score) ? "fanfare" : "defeat");
   };
@@ -82,7 +86,7 @@ export default function ExamScreen() {
             </div>
           </div>
           <div className="over-sub">
-            错题计入错题本(答对不自动清除)
+            错题已计入错题本 · 本次答对的题已从错题本移出
           </div>
           <div className="over-btns">
             <button className="btn btn-primary" onClick={() => setScreen("study")}>

@@ -114,6 +114,7 @@ export default function TitleScreen() {
           <button className="btn-mini" onClick={() => go("gacha")}>🎴 技能抽卡</button>
           <button className="btn-mini" onClick={() => go("deckbuild")}>🃏 构建牌组</button>
           <button className="btn-mini" onClick={() => go("dex")}>📖 图鉴</button>
+          <button className="btn-mini" onClick={() => go("achievements")}>🏆 成就</button>
           <button className="btn-mini" onClick={() => go("bank")}>📚 题库复习</button>
           <button className="btn-mini" onClick={() => go("study")}>🏫 学习中心</button>
           <button className="btn-mini" onClick={() => go("settings")}>⚙️ 设置</button>

@@ -15,6 +15,7 @@ import BankScreen from "./screens/BankScreen";
 import TrainScreen from "./screens/TrainScreen";
 import GachaScreen from "./screens/GachaScreen";
 import DeckBuildScreen from "./screens/DeckBuildScreen";
+import AchievementsScreen from "./screens/AchievementsScreen";
 import SettingsScreen from "./screens/SettingsScreen";
 import StudyScreen from "./screens/StudyScreen";
 import ExamScreen from "./screens/ExamScreen";
@@ -142,6 +143,7 @@ export default function GameApp() {
         {screen === "train" && <TrainScreen />}
         {screen === "gacha" && <GachaScreen />}
         {screen === "deckbuild" && <DeckBuildScreen />}
+        {screen === "achievements" && <AchievementsScreen />}
         {screen === "settings" && <SettingsScreen />}
         {screen === "study" && <StudyScreen />}
         {screen === "exam" && <ExamScreen />}

@@ -23,6 +23,9 @@ function enemyStatusText(status: { type: string; turns: number } | null): string
   return `${names[status.type] || status.type}(${status.turns})`;
 }
 
+/** 每题限时:超时按答错处理(战斗节奏压力 + 防挂机) */
+const QUESTION_TIME_MS = 15000;
+
 export default function BattleScreen() {
   const run = useGameStore((s) => s.run);
   const meta = useGameStore((s) => s.meta);
@@ -43,6 +46,7 @@ export default function BattleScreen() {
   const nextTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fxCanvasRef = useRef<HTMLCanvasElement>(null);
   const [fxOk, setFxOk] = useState(false);
+  const [qLeft, setQLeft] = useState(QUESTION_TIME_MS);
 
   // 答题反馈统一走 lastAnswer(键盘 1-4 与鼠标点击同路径,id 去重)
   // ⚠️ hooks 必须在条件 return 之前,否则 React 报 hooks 数量不一致
@@ -99,6 +103,24 @@ export default function BattleScreen() {
       }
     }
   }, [lastAnswer]);
+
+  // 答题倒计时:每题 15s,超时按答错处理(节奏压力 + 防挂机)
+  useEffect(() => {
+    if (!run?.inBattle) return;
+    if (run.turnPhase !== "question" || !run.currentQ || answerState) return;
+    const start = Date.now();
+    const iv = setInterval(() => {
+      const left = QUESTION_TIME_MS - (Date.now() - start);
+      setQLeft(Math.max(0, left));
+      if (left <= 0) {
+        clearInterval(iv);
+        const st = useGameStore.getState();
+        if (st.run?.turnPhase === "question") st.answer(-1);
+      }
+    }, 100);
+    return () => clearInterval(iv);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [run?.currentQ, run?.turnPhase, run?.inBattle, !!answerState]);
 
   // 卸载/切屏时清理计时器
   useEffect(() => {
@@ -215,10 +237,14 @@ export default function BattleScreen() {
   return (
     <section className="screen active" id="scr-battle">
       <div className="battle-topbar">
-        <div>⚔️ 战斗 · {getPkmName(enemy.id)}</div>
-        <div className="battle-combo">
-          {run.combo > 1 ? `🔥 x${run.combo}` : ""}
-        </div>
+        <div className="bt-item">⚔️ 第 {run.floor} 层</div>
+        <div className="bt-item gold">🏆 {run.score}</div>
+        {run.combo > 1 && (
+          <div className="combo-badge" key={run.combo}>
+            🔥 x{run.combo}
+            {run.combo >= 3 ? ` +${Math.floor((run.combo - 1) * 15)}%` : ""}
+          </div>
+        )}
       </div>
 
       <div className={`battle-stage${fxOk ? " fx-3d" : ""}`} id="battle-stage">
@@ -338,11 +364,20 @@ export default function BattleScreen() {
         }}
       >
         {run.turnPhase === "question" || revealWrong ? (
-          <>
+          <div className="q-wrap" key={run.currentQ?.id ?? "q"}>
+            {run.turnPhase === "question" && !answerState && (
+              <div className="q-timer">
+                <div
+                  className={`q-timer-fill${qLeft < 5000 ? " low" : ""}`}
+                  style={{ width: `${(qLeft / QUESTION_TIME_MS) * 100}%` }}
+                />
+              </div>
+            )}
+            <div className="q-meta">
+              <div className="bt-item">⚡ 已获 {run.turnCorrect} 能量</div>
+            </div>
             <div className="battle-q-text">
-              {run.currentQ
-                ? `[⚡已获得${run.turnCorrect}能量] ${run.currentQ.q}`
-                : "准备答题..."}
+              {run.currentQ ? run.currentQ.q : "准备答题..."}
             </div>
             <div className="battle-options">
               {run.currentQ?.opts.map((opt, i) => (
@@ -367,7 +402,7 @@ export default function BattleScreen() {
                 </button>
               ))}
             </div>
-          </>
+          </div>
         ) : (
           <div className="battle-q-text">📝 出牌阶段 — 点击手牌使用技能</div>
         )}
@@ -377,7 +412,15 @@ export default function BattleScreen() {
       <div
         className="hand-area"
         id="hand-area"
-        style={{ display: captureOpen || defeatOpen || revealWrong ? "none" : undefined }}
+        style={{
+          display:
+            captureOpen ||
+            defeatOpen ||
+            revealWrong ||
+            (run.turnPhase === "question" && handCards.length === 0)
+              ? "none"
+              : undefined,
+        }}
       >
         {handCards.length === 0 && run.turnPhase === "card" ? (
           <div

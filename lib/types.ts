@@ -110,6 +110,11 @@ export type MetaState = {
   totalCorrect: number;
   totalAnswered: number;
   maxComboEver: number;
+  // 进化 & 成就
+  pkmExp: Record<string, number>; // 宝可梦进化经验(答题/重复捕捉 +1,满 evolveCost(id) 可进化)
+  evolveCount: number; // 累计进化次数
+  achievements: Record<string, boolean>; // 已解锁成就
+  bestExamScore: number; // 模拟考试最高分
 };
 
 /* ============ Run(单局,持久化到 dungeonDrive_save) ============ */
@@ -178,6 +183,7 @@ export type ScreenId =
   | "train"
   | "gacha"
   | "deckbuild"
+  | "achievements"
   | "settings"
   | "study"
   | "exam"

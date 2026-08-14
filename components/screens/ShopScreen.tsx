@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useGameStore } from "@/lib/store";
 import { POKE_BALLS } from "@/data/constants";
 import { rollShopCards } from "@/lib/shop";
+import { hydrateCardList } from "@/lib/cards";
 import { AudioEngine } from "@/lib/audio";
 import type { BallKey } from "@/lib/types";
 
@@ -16,6 +17,7 @@ export default function ShopScreen() {
   const [stock] = useState(() => rollShopCards(4));
 
   if (!run) return null;
+  const deckCards = hydrateCardList(run.deck);
 
   return (
     <section className="screen active" id="scr-shop">
@@ -72,19 +74,29 @@ export default function ShopScreen() {
             <div className="shop-price">{price}🪙</div>
           </div>
         ))}
+
+        <div className="shop-section">🗑️ 移除卡牌 (75🪙/张 · 点击选择要移除的牌)</div>
+        {deckCards.map((card) => (
+          <div
+            key={card.id}
+            className={`shop-item${run.gold < 75 || run.deck.length <= 5 ? " empty" : ""}`}
+            onClick={() => {
+              AudioEngine.sfx("click");
+              removeDeckCard(card.id);
+            }}
+          >
+            <div className="card-icon">{card.icon}</div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 700 }}>{card.name}</div>
+              <div style={{ fontSize: 10, color: "var(--dim)" }}>{card.desc}</div>
+            </div>
+            <div className="shop-price">🗑️ 移除</div>
+          </div>
+        ))}
       </div>
 
       {/* 底部固定操作区(参考线上版:主按钮固定在底部,不随列表滚动) */}
       <div className="shop-foot">
-        <button
-          className="btn"
-          onClick={() => {
-            AudioEngine.sfx("click");
-            removeDeckCard();
-          }}
-        >
-          🗑️ 移除一张牌 (75🪙)
-        </button>
         <button
           className="btn btn-primary"
           onClick={() => {

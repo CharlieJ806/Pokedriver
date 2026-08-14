@@ -28,6 +28,10 @@ export function defaultMeta(): MetaState {
     totalCorrect: 0,
     totalAnswered: 0,
     maxComboEver: 0,
+    pkmExp: {},
+    evolveCount: 0,
+    achievements: {},
+    bestExamScore: 0,
   };
 }
 
@@ -58,6 +62,11 @@ export function loadMeta(): MetaState {
       totalCorrect: d.totalCorrect || 0,
       totalAnswered: d.totalAnswered || 0,
       maxComboEver: d.maxComboEver || 0,
+      pkmExp: d.pkmExp && typeof d.pkmExp === "object" ? d.pkmExp : {},
+      evolveCount: d.evolveCount || 0,
+      achievements:
+        d.achievements && typeof d.achievements === "object" ? d.achievements : {},
+      bestExamScore: d.bestExamScore || 0,
     };
     // 迁移后立即写回,补全缺省字段
     saveMeta(meta);
@@ -267,4 +276,56 @@ export function wipeAll(): void {
   } catch {
     /* ignore */
   }
+}
+
+/* ============ 存档导出 / 导入(留存) ============ */
+
+/** 导出全部存档(meta + run + 导入题库)为 JSON 字符串,供下载 */
+export function exportSaveBundle(): string {
+  const bundle = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    meta:
+      typeof window === "undefined" ? null : localStorage.getItem(META_KEY),
+    run: typeof window === "undefined" ? null : localStorage.getItem(RUN_KEY),
+    questions:
+      typeof window === "undefined" ? null : localStorage.getItem(IMPORTED_KEY),
+  };
+  return JSON.stringify(bundle);
+}
+
+/** 导入存档:逐项校验并写回 localStorage,返回结果 */
+export function importSaveBundle(raw: string): {
+  ok: boolean;
+  error?: string;
+} {
+  if (typeof window === "undefined") return { ok: false, error: "无浏览器环境" };
+  let b: unknown;
+  try {
+    b = JSON.parse(raw);
+  } catch {
+    return { ok: false, error: "文件解析失败" };
+  }
+  if (!b || typeof b !== "object") return { ok: false, error: "文件格式错误" };
+  const bundle = b as Record<string, unknown>;
+  let n = 0;
+  const put = (key: string, v: unknown): boolean => {
+    if (typeof v !== "string") return false;
+    try {
+      JSON.parse(v); // 校验为合法 JSON 串
+    } catch {
+      return false;
+    }
+    try {
+      localStorage.setItem(key, v);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+  if (put(META_KEY, bundle.meta)) n++;
+  if (put(RUN_KEY, bundle.run)) n++;
+  if (put(IMPORTED_KEY, bundle.questions)) n++;
+  if (n === 0) return { ok: false, error: "文件里没有有效存档数据" };
+  return { ok: true };
 }

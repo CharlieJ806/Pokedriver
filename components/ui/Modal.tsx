@@ -15,6 +15,7 @@ import {
   RARITY_NAMES,
   POKE_BALLS,
 } from "@/data/constants";
+import { evolveCost, getEvoTargets } from "@/data/evolutions";
 import { ALL_CARDS, findCard } from "@/lib/cards";
 import { ICON } from "@/lib/icon";
 import { AudioEngine } from "@/lib/audio";
@@ -41,6 +42,7 @@ export default function Modal() {
   const addToTeam = useGameStore((s) => s.addToTeam);
   const removeFromTeam = useGameStore((s) => s.removeFromTeam);
   const setActiveTeam = useGameStore((s) => s.setActiveTeam);
+  const evolvePkm = useGameStore((s) => s.evolvePkm);
 
   if (!modal) return null;
 
@@ -98,7 +100,13 @@ export default function Modal() {
                         AudioEngine.sfx("caught");
                         if (BattleFX.ok) setTimeout(() => BattleFX.endCapture(), 400);
                         if (layer) {
-                          spawnFxText(layer, 50, 38, `成功捕获 ${getPkmName(res.pkmId)}！`, "#ffd700");
+                          spawnFxText(
+                            layer,
+                            50,
+                            38,
+                            `成功捕获 ${getPkmName(res.pkmId)}！${res.bonus ? " " + res.bonus : ""}`,
+                            "#ffd700",
+                          );
                           domBurst(layer, 50, 40, "#ffd700", 26);
                         }
                       } else {
@@ -249,6 +257,8 @@ export default function Modal() {
     const isActive = meta.team.length > 0 && meta.team[0] === pkm.id;
     const teamFull = meta.team.length >= MAX_TEAM_SIZE;
     const bst = getBST(pkm.id);
+    const exp = (meta.pkmExp || {})[String(pkm.id)] || 0;
+    const cost = evolveCost(pkm.id);
     return (
       <div className="modal-wrap" onClick={closeModal}>
         <div className="modal" onClick={(e) => e.stopPropagation()}>
@@ -280,6 +290,36 @@ export default function Modal() {
                   : ""}
             {inTeam ? (isActive ? "<br/>📍 出战宝可梦" : "<br/>📍 已在队伍中") : ""}
           </div>
+          {getEvoTargets(pkm.id).length > 0 && (
+            <div className="evo-box">
+              <div className="evo-info">
+                ✨ 进化路线: {getEvoTargets(pkm.id).map((t) => getPkmName(t)).join(" / ")}
+                <span className="evo-exp">
+                  {" "}({Math.min(exp, cost)}/{cost} 经验)
+                </span>
+              </div>
+              {exp < cost ? (
+                <div className="evo-bar">
+                  <i style={{ width: `${Math.min(100, (exp / cost) * 100)}%` }} />
+                </div>
+              ) : (
+                <button
+                  className="btn btn-primary"
+                  onClick={() => {
+                    const target = evolvePkm(pkm.id);
+                    if (target) {
+                      AudioEngine.sfx("caught");
+                      const layer = document.getElementById("app-fx-layer");
+                      domBurst(layer, 50, 50, "#ffd700", 26);
+                      closeModal();
+                    }
+                  }}
+                >
+                  ✨ 进化！
+                </button>
+              )}
+            </div>
+          )}
           <div className="m-actions">
             {inTeam ? (
               isActive ? null : (

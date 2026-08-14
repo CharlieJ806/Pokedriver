@@ -5,6 +5,7 @@ import { QUESTIONS, type Question } from "@/data";
 import {
   DECK_MAX,
   DEFAULT_POKEMON_ID,
+  DUP_CATCH_GOLD,
   GACHA_COST,
   MAX_TEAM_SIZE,
   POKE_BALLS,
@@ -23,6 +24,8 @@ import {
 } from "./battle";
 import { applyNodeSelection, generateMapNodes } from "./map";
 import { ALL_CARDS, STARTER_CARD_IDS, findCard } from "./cards";
+import { evolveCost, getEvoTargets } from "@/data/evolutions";
+import { evalAchievements, type AchievementDef } from "./achievements";
 import {
   getMaxHpFromMeta,
   getPkmMaxHp,
@@ -90,6 +93,12 @@ function ensureMetaDefaults(meta: MetaState): void {
   if (!Array.isArray(meta.builtDeckIds) || meta.builtDeckIds.length === 0) {
     meta.builtDeckIds = [...STARTER_CARD_IDS];
   }
+  if (!meta.pkmExp || typeof meta.pkmExp !== "object") meta.pkmExp = {};
+  if (typeof meta.evolveCount !== "number") meta.evolveCount = 0;
+  if (!meta.achievements || typeof meta.achievements !== "object") {
+    meta.achievements = {};
+  }
+  if (typeof meta.bestExamScore !== "number") meta.bestExamScore = 0;
 }
 
 export type AnswerResult = {
@@ -140,12 +149,13 @@ type GameStore = {
   addToTeam: (id: number) => void;
   removeFromTeam: (id: number) => void;
   setActiveTeam: (id: number) => void;
+  evolvePkm: (id: number) => number | null;
   doGachaOnce: () => void;
   toggleDeckCard: (id: string) => void;
   resetBuiltDeck: () => void;
   bumpWrongQ: (qid: string, n?: number) => void;
   clearWrongQ: (qid: string) => void;
-  recordExamResult: (score: number, wrongIds: string[]) => void;
+  recordExamResult: (score: number, wrongIds: string[], correctIds?: string[]) => void;
   importQuestions: (qs: Question[]) => void;
   wipeAll: () => void;
 
@@ -163,7 +173,7 @@ type GameStore = {
   leaveShop: () => void;
   buyBall: (key: BallKey) => void;
   buyShopCard: (cardId: string, price: number) => void;
-  removeDeckCard: () => void;
+  removeDeckCard: (cardId: string) => void;
   openRest: () => void;
   restHeal: () => void;
   restTrain: () => void;
@@ -181,7 +191,7 @@ type GameStore = {
   playCard: (idx: number) => void;
   endTurnAction: () => void;
   endBattle: (won: boolean) => void;
-  attemptCapture: (ball: BallKey) => { success: boolean; pkmId: number } | undefined;
+  attemptCapture: (ball: BallKey) => { success: boolean; pkmId: number; bonus?: string } | undefined;
   beginCaptureAnim: () => void;
   finishCapture: () => void;
   skipCapture: () => void;
@@ -196,6 +206,18 @@ function cloneMeta(meta: MetaState): MetaState {
 
 function cloneRun(run: RunState): RunState {
   return JSON.parse(JSON.stringify(run)) as RunState;
+}
+
+/** 成就解锁 toast(最多显示 3 个名字,超出折叠,附金币奖励) */
+function notifyAchievements(get: () => GameStore, newly: AchievementDef[]): void {
+  if (newly.length === 0) return;
+  const names = newly
+    .slice(0, 3)
+    .map((a) => a.name)
+    .join("、");
+  const more = newly.length > 3 ? ` 等${newly.length}项` : "";
+  const gold = newly.reduce((s, a) => s + a.reward, 0);
+  get().showToast(`🏆 成就解锁: ${names}${more} +${gold}金`, 2800);
 }
 
 export const useGameStore = create<GameStore>((set, get) => ({
@@ -221,6 +243,8 @@ export const useGameStore = create<GameStore>((set, get) => ({
     ensureMetaDefaults(meta);
     if (isAdminEnv()) applyAdminMeta(meta);
     const imported = getImportedQuestions();
+    // 老玩家回溯解锁成就(静默,不弹 toast)
+    evalAchievements(meta);
     set({
       meta,
       questionPool: imported ? imported : [...QUESTIONS],
@@ -338,6 +362,36 @@ export const useGameStore = create<GameStore>((set, get) => ({
     get().showToast(`${getPkmName(id)} 设为出战!`, 1500);
   },
 
+  evolvePkm: (id) => {
+    const meta = cloneMeta(get().meta);
+    const targets = getEvoTargets(id);
+    const cost = evolveCost(id);
+    const exp = (meta.pkmExp || {})[String(id)] || 0;
+    if (targets.length === 0 || exp < cost) return null;
+    const target = targets[Math.floor(Math.random() * targets.length)]!;
+    meta.pkmExp = { ...(meta.pkmExp || {}), [String(id)]: 0 };
+    meta.collected = { ...meta.collected, [String(target)]: true };
+    meta.evolveCount = (meta.evolveCount || 0) + 1;
+    const idx = meta.team.indexOf(id);
+    if (idx >= 0) {
+      const t = [...meta.team];
+      t[idx] = target;
+      meta.team = t;
+    }
+    const newlyAch = evalAchievements(meta);
+    set({ meta });
+    persistMeta(meta);
+    const ach =
+      newlyAch.length > 0
+        ? ` · 🏆 解锁: ${newlyAch.map((a) => a.name).join("、")} +${newlyAch.reduce((s, a) => s + a.reward, 0)}金`
+        : "";
+    get().showToast(
+      `✨ ${getPkmName(id)} 进化成了 ${getPkmName(target)}！${ach}`,
+      2800,
+    );
+    return target;
+  },
+
   doGachaOnce: () => {
     const meta = cloneMeta(get().meta);
     ensureMetaDefaults(meta);
@@ -410,16 +464,24 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
   },
 
-  /** 考试交卷:错题只增不删,totalAnswered += 100(线上版行为) */
-  recordExamResult: (score, wrongIds) => {
+  /** 考试交卷:答错入错题本 +1,答对即移出(错题本语义统一) */
+  recordExamResult: (score, wrongIds, correctIds) => {
     const meta = cloneMeta(get().meta);
     meta.totalAnswered += 100;
     meta.totalCorrect += score;
     for (const id of wrongIds) {
       meta.wrongQ[id] = (meta.wrongQ[id] || 0) + 1;
     }
+    if (correctIds) {
+      for (const id of correctIds) {
+        if (meta.wrongQ[id]) delete meta.wrongQ[id];
+      }
+    }
+    if (score > (meta.bestExamScore || 0)) meta.bestExamScore = score;
+    const newlyAch = evalAchievements(meta);
     set({ meta });
     persistMeta(meta);
+    notifyAchievements(get, newlyAch);
   },
 
   importQuestions: (qs) => {
@@ -454,6 +516,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (starterId != null) {
       meta.collected = { ...meta.collected, [String(starterId)]: true };
     }
+    const newlyAch = evalAchievements(meta);
 
     // 开局队伍:所选御三家(如有)+ 图鉴配置的队伍(去重,上限 MAX_TEAM_SIZE)
     const team = [
@@ -526,9 +589,13 @@ export const useGameStore = create<GameStore>((set, get) => ({
     });
     persistMeta(meta);
     persistRun(run);
+    const achText =
+      newlyAch.length > 0
+        ? `🏆 成就解锁: ${newlyAch.map((a) => a.name).join("、")} +${newlyAch.reduce((s, a) => s + a.reward, 0)}金`
+        : null;
     get().showToast(
-      `上阵队伍: ${team.map((id) => getPkmName(id)).join(" / ")}`,
-      2200,
+      achText ?? `上阵队伍: ${team.map((id) => getPkmName(id)).join(" / ")}`,
+      2600,
     );
   },
 
@@ -638,7 +705,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     get().showToast(`购买: ${findCard(cardId)?.name ?? cardId}`, 1500);
   },
 
-  removeDeckCard: () => {
+  removeDeckCard: (cardId) => {
     const run0 = get().run;
     if (!run0) return;
     if (run0.gold < 75) {
@@ -650,15 +717,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
       return;
     }
     const run = cloneRun(run0);
+    const idx = run.deck.indexOf(cardId);
+    if (idx < 0) return;
+    run.deck.splice(idx, 1);
     run.gold -= 75;
-    const idx = Math.floor(Math.random() * run.deck.length);
-    const removed = run.deck.splice(idx, 1)[0]!;
-    run.drawPile = run.drawPile.filter((id) => id !== removed);
-    run.discardPile = run.discardPile.filter((id) => id !== removed);
-    run.hand = run.hand.filter((id) => id !== removed);
+    run.drawPile = run.drawPile.filter((id) => id !== cardId);
+    run.discardPile = run.discardPile.filter((id) => id !== cardId);
+    run.hand = run.hand.filter((id) => id !== cardId);
     set({ run });
     persistRun(run);
-    get().showToast(`移除: ${findCard(removed)?.name ?? removed}`, 1500);
+    get().showToast(`移除: ${findCard(cardId)?.name ?? cardId}`, 1500);
   },
 
   openRest: () => {
@@ -814,6 +882,19 @@ export const useGameStore = create<GameStore>((set, get) => ({
     }
     if (run.maxCombo > meta.maxComboEver) meta.maxComboEver = run.maxCombo;
 
+    // 答对:出战宝可梦积累进化经验(仅可进化的宝可梦记录,经验封顶不溢出)
+    if (res.correct && run.team[run.activeIdx] != null) {
+      const pid = run.team[run.activeIdx]!;
+      const cost = evolveCost(pid);
+      if (cost > 0 && ((meta.pkmExp || {})[String(pid)] || 0) < cost) {
+        meta.pkmExp = {
+          ...(meta.pkmExp || {}),
+          [String(pid)]: ((meta.pkmExp || {})[String(pid)] || 0) + 1,
+        };
+      }
+    }
+    const newlyAch = evalAchievements(meta);
+
     const result: AnswerResult = {
       ...res,
       id: ++answerEventSeq,
@@ -822,6 +903,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     set({ run, meta, lastAnswer: result });
     persistRun(run);
     persistMeta(meta);
+    notifyAchievements(get, newlyAch);
 
     // 答题击杀敌人 → 结束战斗;答错反伤致死 → 败北(迁移自 standalone handleBattleAnswer)
     if (res.enemyDead) {
@@ -899,8 +981,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
         meta.metaGold += g;
         run.score +=
           node.type === "boss" ? 100 : node.type === "elite" ? 50 : 20;
+        const newlyAch = evalAchievements(meta);
         set({ meta });
         persistMeta(meta);
+        notifyAchievements(get, newlyAch);
       }
 
       // 击败 BOSS:进入下一层(无限闯关)
@@ -945,7 +1029,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
    * 返回 { success, pkmId };UI 表现(3D 投球动画/飘字)由调用方播放,
    * 结束后调用 finishCapture() 关闭弹窗并进入奖励/回地图。
    */
-  attemptCapture: (ball): { success: boolean; pkmId: number } | undefined => {
+  attemptCapture: (ball): { success: boolean; pkmId: number; bonus?: string } | undefined => {
     const run0 = get().run;
     if (!run0) return;
     const run = cloneRun(run0);
@@ -958,8 +1042,20 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const finalRate = ballDef.rates[pkm.r] || ballDef.rates.c || 0.5;
 
     const success = Math.random() < finalRate;
+    let bonus: string | undefined;
     if (success) {
       meta.collected = { ...meta.collected, [String(pkm.id)]: true };
+      // 重复捕捉收益:可进化且经验未满 +1 经验(封顶);经验已满/不可进化转金币
+      const cost = evolveCost(pkm.id);
+      const exp = (meta.pkmExp || {})[String(pkm.id)] || 0;
+      if (cost > 0 && exp < cost) {
+        meta.pkmExp = { ...(meta.pkmExp || {}), [String(pkm.id)]: exp + 1 };
+        bonus = "+1 进化经验";
+      } else {
+        run.gold += DUP_CATCH_GOLD;
+        meta.metaGold = (meta.metaGold || 0) + DUP_CATCH_GOLD;
+        bonus = `+${DUP_CATCH_GOLD} 金币`;
+      }
       // 队伍有空位时自动上阵(meta 跨局保留,run 本局立即生效)
       if (meta.team.length < MAX_TEAM_SIZE && !meta.team.includes(pkm.id)) {
         meta.team.push(pkm.id);
@@ -970,10 +1066,12 @@ export const useGameStore = create<GameStore>((set, get) => ({
         get().showToast("队伍已满,新伙伴将在图鉴中待命", 1800);
       }
     }
+    const newlyAch = evalAchievements(meta);
     set({ run, meta });
     persistRun(run);
     persistMeta(meta);
-    return { success, pkmId: pkm.id };
+    notifyAchievements(get, newlyAch);
+    return { success, pkmId: pkm.id, bonus };
   },
 
   /** 开始投球捕获动画:关弹窗 + 标记动画中(战斗舞台保持渲染,canvas 不卸载) */
@@ -1059,6 +1157,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     const isRecord = run.score > meta.bestScore;
     if (isRecord) meta.bestScore = run.score;
     if (run.floor > meta.bestFloor) meta.bestFloor = run.floor;
+    const newlyAch = evalAchievements(meta);
 
     const info: GameOverInfo = {
       win: false,
@@ -1079,6 +1178,7 @@ export const useGameStore = create<GameStore>((set, get) => ({
     });
     persistRun(run);
     persistMeta(meta);
+    notifyAchievements(get, newlyAch);
 
     // 倒下动画(约 0.5s 起播 + 0.7s 时长)后切结算屏
     setTimeout(() => {
