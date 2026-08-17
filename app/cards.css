@@ -37,7 +37,7 @@
 /* 战斗精灵与信息区 */
 /* 3D 战斗场景:固定高度、不透明实心舞台(上浅下深:天空→地面) */
 #scr-battle .battle-stage{flex:none;height:min(54vh,520px);display:flex;flex-direction:column}
-@media (max-height:640px){
+@media (max-height:700px){
   #scr-battle .battle-stage{height:min(44vh,360px)}
   .hand-area{min-height:84px;padding:8px 10px}
   .battle-q-area{padding:14px 10px 8px;gap:6px}
@@ -45,6 +45,10 @@
   .battle-options{gap:6px}
   .battle-opt-btn{padding:9px 12px;font-size:13px}
   .battle-actions{padding:4px 10px calc(6px + var(--safe-b))}
+}
+/* 手机竖屏:压缩舞台,把更多空间让给答题区,长题目显示更完整 */
+@media (max-width:640px){
+  #scr-battle .battle-stage{height:min(40vh,340px)}
 }
 #battle-fx-canvas{
   position:absolute;inset:0;width:100%;height:100%;display:block;z-index:0;
