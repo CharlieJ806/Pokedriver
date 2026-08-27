@@ -5,7 +5,7 @@ import { POKEMON } from "@/data";
 import { useGameStore } from "@/lib/store";
 import { MAX_TEAM_SIZE, RARITY_NAMES } from "@/data/constants";
 import { getPkmName } from "@/lib/formulas";
-import { evolveCost, getEvoTargets } from "@/data/evolutions";
+import { evolveCost } from "@/data/evolutions";
 import { ICON } from "@/lib/icon";
 import { AudioEngine } from "@/lib/audio";
 import type { Rarity } from "@/lib/types";
@@ -104,11 +104,14 @@ export default function DexScreen() {
                 }}
               >
                 <span className="dc-id">#{p.id}</span>
-                {ICON(p.id) ? (
-                  <img className="dc-img" src={ICON(p.id)} alt="" />
-                ) : (
-                  <span className="pkm-img-fallback">👾</span>
-                )}
+                <img
+                  className="dc-img"
+                  src={ICON(p.id)}
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                  draggable={false}
+                />
                 <span className="dc-name">
                   {collected ? p.c : "???"}
                   {inTeam ? " ⭐" : ""}

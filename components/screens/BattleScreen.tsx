@@ -7,7 +7,9 @@ import { hydrateCardList } from "@/lib/cards";
 import { ICON } from "@/lib/icon";
 import { AudioEngine } from "@/lib/audio";
 import { spawnDmg, spawnFxText, domBurst } from "@/lib/dom-fx";
-import { BattleFX } from "@/lib/fx3d";
+// three.js/fx3d 动态分包:主包不再携带 3D 引擎,进战斗时异步拉取
+// (fx3d 内部用单例状态,动态 import 返回同一实例;未就绪时走 2D 降级路径)
+type Fx3dModule = typeof import("@/lib/fx3d");
 import type { Card } from "@/lib/types";
 
 function enemyStatusText(status: { type: string; turns: number } | null): string {
@@ -45,6 +47,7 @@ export default function BattleScreen() {
   const lastProcessedRef = useRef(0);
   const nextTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const fxCanvasRef = useRef<HTMLCanvasElement>(null);
+  const fxModuleRef = useRef<Fx3dModule | null>(null);
   const [fxOk, setFxOk] = useState(false);
   const [qLeft, setQLeft] = useState(QUESTION_TIME_MS);
 
@@ -62,9 +65,10 @@ export default function BattleScreen() {
       const stage = document.getElementById("battle-stage");
       // 玩家攻击动画:精灵前冲 + 光弹 + 命中粒子 + 受击抖动
       const crit = res.combo > 0 && res.combo % 5 === 0;
-      if (BattleFX.ok) {
-        BattleFX.attack("player", { crit });
-        BattleFX.comboAura(res.combo);
+      const FX = fxModuleRef.current?.BattleFX;
+      if (FX?.ok) {
+        FX.attack("player", { crit });
+        FX.comboAura(res.combo);
       }
       spawnDmg(stage, 66, 34, `-${res.dmg}`, crit ? "#ffd700" : "#ff6688", crit);
       if (crit) {
@@ -83,9 +87,8 @@ export default function BattleScreen() {
           setAnswerState(null);
         }, 400);
       }
-      // 击杀 → 敌方倒下动画
-      if (res.enemyDead && BattleFX.ok) {
-        setTimeout(() => BattleFX.ko("enemy"), 350);
+      if (res.enemyDead && FX?.ok) {
+        setTimeout(() => FX.ko("enemy"), 350);
       }
     } else {
       AudioEngine.sfx("wrong");
@@ -117,7 +120,6 @@ export default function BattleScreen() {
       }
     }, 900);
     return () => clearTimeout(t);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [run?.questionAnswered, run?.turnPhase, run?.inBattle]);
 
   // 答题倒计时:每题 15s,超时按答错处理(节奏压力 + 防挂机)
@@ -144,45 +146,50 @@ export default function BattleScreen() {
       if (nextTimerRef.current) clearTimeout(nextTimerRef.current);
     };
   }, []);
-
-  // 3D 战斗场景初始化(精灵入场/攻击/受击/倒下/投球捕获动画)
-  // 生命周期 = 组件挂载/卸载(每场战斗重新挂载);捕获弹窗期间组件保持渲染,
-  // 投球动画播完(screen 切回 map)组件卸载才 dispose。
   useEffect(() => {
     const canvas = fxCanvasRef.current;
     if (!canvas) return;
-    const ok = BattleFX.init(canvas);
-    setFxOk(ok);
-    if (ok) {
-      BattleFX.setRunning(true);
-      const st = useGameStore.getState();
-      const r = st.run;
-      if (r?.enemyPkm) {
-        BattleFX.setPlayer(r.team[r.activeIdx] ?? 25);
-        BattleFX.setEnemy(r.enemyPkm.id, r.enemyPkm.r);
+    let disposed = false;
+    let ro: ResizeObserver | null = null;
+    void import("@/lib/fx3d").then((FX) => {
+      if (disposed) return; // 卸载竞态:动画帧已取消,不再初始化
+      fxModuleRef.current = FX;
+      const { BattleFX } = FX;
+      const ok = BattleFX.init(canvas);
+      setFxOk(ok);
+      if (ok) {
+        BattleFX.setRunning(true);
+        const st = useGameStore.getState();
+        const r = st.run;
+        if (r?.enemyPkm) {
+          BattleFX.setPlayer(r.team[r.activeIdx] ?? 25);
+          BattleFX.setEnemy(r.enemyPkm.id, r.enemyPkm.r);
+        }
       }
-    }
-    // 舞台尺寸变化(答题区隐藏/显示)时同步 3D 渲染尺寸,画面保持固定
-    const stage = canvas.parentElement;
-    const ro =
-      stage instanceof Element
-        ? new ResizeObserver(() => {
-            if (BattleFX.ok) BattleFX.resize();
-          })
-        : null;
-    if (ro && stage instanceof Element) ro.observe(stage);
+      // 舞台尺寸变化(答题区隐藏/显示)时同步 3D 渲染尺寸,画面保持固定
+      const stage = canvas.parentElement;
+      if (stage instanceof Element) {
+        ro = new ResizeObserver(() => {
+          if (BattleFX.ok) BattleFX.resize();
+        });
+        ro.observe(stage);
+      }
+    });
     return () => {
+      disposed = true;
       ro?.disconnect();
-      BattleFX.setRunning(false);
-      BattleFX.dispose();
+      const FX = fxModuleRef.current;
+      if (FX) {
+        FX.BattleFX.setRunning(false);
+        FX.BattleFX.dispose();
+      }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // 出战宝可梦变化 → 换人入场动画
   useEffect(() => {
     if (!fxOk || !run || !run.inBattle) return;
-    BattleFX.setPlayer(run.team[run.activeIdx] ?? 25);
+    fxModuleRef.current?.BattleFX.setPlayer(run.team[run.activeIdx] ?? 25);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [run?.activeIdx, run?.inBattle, fxOk]);
 
@@ -190,7 +197,7 @@ export default function BattleScreen() {
   useEffect(() => {
     if (!fxOk || !run) return;
     if (run.gameOver) {
-      const t = setTimeout(() => BattleFX.ko("player"), 500);
+      const t = setTimeout(() => fxModuleRef.current?.BattleFX.ko("player"), 500);
       return () => clearTimeout(t);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -216,20 +223,15 @@ export default function BattleScreen() {
     const r = st.run;
     if (!r || r.turnPhase !== "card") return;
     const card = hydrateCardList([r.hand[idx]])[0];
-    if (!card) return;
-    if (r.energy < card.cost) {
-      st.showToast("能量不足", 1200);
-      return;
+    const cardFX = fxModuleRef.current?.BattleFX;
+    if (cardFX?.ok) {
+      if (card.type === "atk") cardFX.attack("player", {});
+      else if (card.type === "heal") cardFX.heal("player");
+      else if (card.type === "def") cardFX.burstAt("player", 0x66ccff, 18);
     }
     playCard(idx);
     AudioEngine.sfx("click");
     const stage = document.getElementById("battle-stage");
-    // 出牌动画:攻击卡 → 玩家攻击;治疗卡 → 治愈粒子;防御卡 → 护盾光
-    if (BattleFX.ok) {
-      if (card.type === "atk") BattleFX.attack("player", {});
-      else if (card.type === "heal") BattleFX.heal("player");
-      else if (card.type === "def") BattleFX.burstAt("player", 0x66ccff, 18);
-    }
     if (card.type === "atk" && stage) {
       domBurst(stage, 12, 8, "#ff5252", 12);
     }
@@ -243,8 +245,9 @@ export default function BattleScreen() {
     }
     endTurnAction();
     // 回合结束 → 敌方攻击动画(泄能/异常结算后)
-    if (BattleFX.ok) {
-      setTimeout(() => BattleFX.attack("enemy", {}), 500);
+    const endFX = fxModuleRef.current?.BattleFX;
+    if (endFX?.ok) {
+      setTimeout(() => endFX.attack("enemy", {}), 500);
     }
   };
 

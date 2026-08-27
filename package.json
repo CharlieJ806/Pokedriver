@@ -4,9 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "npm run data:sync && npm run icons:gen && next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "icons:gen": "node scripts/emit-pkmn-icons.mjs",
+    "data:sync": "node scripts/sync-public-data.mjs"
   },
   "dependencies": {
     "@types/three": "^0.185.4",

@@ -4,7 +4,6 @@ export * from "./types";
 export {
   RARITY_LABEL,
   RARITY_CSS,
-  PKMN_BY_ID,
   rand,
   pick,
   clamp,
@@ -85,5 +84,4 @@ export type { AnswerResult } from "./store";
 
 export { ICON } from "./icon";
 export { AudioEngine } from "./audio";
-export { BattleFX } from "./fx3d";
 export { spawnDmg, spawnFxText, domBurst } from "./dom-fx";

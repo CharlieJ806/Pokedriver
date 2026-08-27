@@ -52,10 +52,17 @@ async function inspect(name) {
       if (r.right > vw + 2 && !inScrollH) overflow.push(`${cls} 右界${Math.round(r.right)}>${vw}`);
       if (r.bottom > vh + 2 && !inScrollV) overflow.push(`${cls} 下界${Math.round(r.bottom)}>${vh}`);
     });
-    // 宽度撑满检查:容器直接子元素明显收缩(<85% 容器宽)
+    // 容器直接子元素明显收缩(<85% 容器宽)检查。
+    // 注意:flex column + align-items:center 的容器子元素本就按内容收缩,
+    // 属设计行为(如 title 屏的 logo/pkmn/team/foot),不适用此检查。
     const inner = document.querySelector(".screen.active .title-inner");
     const shrink = [];
-    if (inner) {
+    const innerCS = inner ? getComputedStyle(inner) : null;
+    const centeredCol =
+      innerCS?.display?.includes("flex") &&
+      innerCS.flexDirection === "column" &&
+      innerCS.alignItems === "center";
+    if (inner && !centeredCol) {
       const iw = inner.getBoundingClientRect().width;
       [...inner.children].forEach((el) => {
         const r = el.getBoundingClientRect();
@@ -152,19 +159,31 @@ try {
   });
   await waitScreen("scr-map");
   await inspect("地图");
-
-  // 战斗:点击第一列可达节点(canvas 左侧,尝试多个 y)
   const inBattle = await page.evaluate(async () => {
     const canvas = document.querySelector("#map-canvas");
     if (!canvas) return false;
     const rect = canvas.getBoundingClientRect();
-    for (const fy of [0.25, 0.45, 0.65, 0.85]) {
-      const x = rect.left + 56;
-      const y = rect.top + rect.height * fy;
-      canvas.dispatchEvent(new MouseEvent("click", { clientX: x, clientY: y, bubbles: true }));
+    const W = canvas.width, H = canvas.height;
+    // 与 lib/map.ts computeLayout 相同的公式(dpr=视口 devicePixelRatio)
+    const dpr = window.devicePixelRatio || 1;
+    const nodeR = 18 * dpr, padExtra = 16 * dpr;
+    const topChrome = 36 * dpr, bottomChrome = 18 * dpr;
+    const marginY = Math.max(72 * dpr, nodeR + padExtra + topChrome * 0.5);
+    const topPad = marginY + topChrome * 0.25;
+    const botPad = marginY + bottomChrome * 0.25;
+    const usableH = Math.max(1, H - topPad - botPad);
+    const scaleX = rect.width / W;
+    const scaleY = rect.height / H;
+    const marginX = Math.max(50 * dpr, nodeR + padExtra + 8 * dpr);
+    for (let row = 0; row < 3; row++) {
+      const yCanvas = topPad + (row / 2) * usableH;
+      canvas.dispatchEvent(new MouseEvent("click", {
+        clientX: rect.left + marginX * scaleX,
+        clientY: rect.top + yCanvas * scaleY,
+        bubbles: true,
+      }));
       await new Promise((r) => setTimeout(r, 400));
-      const scr = document.querySelector(".screen.active")?.id;
-      if (scr === "scr-battle") return true;
+      if (document.querySelector(".screen.active")?.id === "scr-battle") return true;
     }
     return false;
   });

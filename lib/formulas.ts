@@ -18,9 +18,19 @@ export const RARITY_CSS: Record<Rarity, string> = {
   l: "tag-l",
 };
 
-export const PKMN_BY_ID: Record<number, Pokemon> = {};
-for (const p of POKEMON) {
-  PKMN_BY_ID[p.id] = p;
+/**
+ * id → 宝可梦索引。POKEMON 是运行时填充的活数组(loadData 异步 push),
+ * 模块加载时为空,不能在模块顶层建索引;按长度失效惰性重建
+ * (数据只 push 一次,重建实际最多发生一次)。
+ */
+let pkmIndex: Map<number, Pokemon> | null = null;
+let pkmIndexLen = -1;
+function pkmById(id: number): Pokemon | null {
+  if (!pkmIndex || pkmIndexLen !== POKEMON.length) {
+    pkmIndex = new Map(POKEMON.map((p) => [p.id, p]));
+    pkmIndexLen = POKEMON.length;
+  }
+  return pkmIndex.get(id) ?? null;
 }
 
 export function rand(a: number, b: number): number {
@@ -51,11 +61,11 @@ export function shuffle<T>(arr: readonly T[]): T[] {
 /* ============ 宝可梦查询(迁移自 standalone game.js) ============ */
 
 export function getPkmById(id: number): Pokemon | null {
-  return PKMN_BY_ID[id] ?? null;
+  return pkmById(id);
 }
 
 export function getPkmName(id: number): string {
-  return PKMN_BY_ID[id]?.c ?? "???";
+  return pkmById(id)?.c ?? "???";
 }
 
 /** 种族值;null/缺失回退 300(迁移自 getBST) */

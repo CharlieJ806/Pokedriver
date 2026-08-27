@@ -1,7 +1,7 @@
 /* 3D battle scene (Three.js) + particle FX — browser-only */
 
 import * as THREE from "three";
-import { PKMN_ICONS } from "@/data";
+import { ICON } from "@/lib/icon";
 import type { Rarity } from "@/data";
 
 export type BattleSide = "player" | "enemy";
@@ -182,7 +182,7 @@ function makeBallTexture(): THREE.CanvasTexture {
 }
 
 function spriteTexture(id: number | string): THREE.Texture {
-  const url = PKMN_ICONS[String(id)] ?? "";
+  const url = ICON(id);
   const tex = new THREE.TextureLoader().load(url);
   tex.magFilter = THREE.NearestFilter;
   tex.minFilter = THREE.NearestFilter;
@@ -456,8 +456,15 @@ function init(canvas: HTMLCanvasElement): boolean {
   if (S.ok && S.canvas !== canvas) dispose();
   try {
     S.canvas = canvas;
-    S.renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
-    S.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.8));
+    // 高 DPR 移动屏上抗锯齿肉眼收益极小但 fragment 负载显著,按需开启
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.8);
+    S.renderer = new THREE.WebGLRenderer({
+      canvas,
+      antialias: dpr < 1.5,
+      alpha: true,
+      powerPreference: "high-performance",
+    });
+    S.renderer.setPixelRatio(dpr);
     glowTex = makeGlowTexture();
 
     S.scene = new THREE.Scene();

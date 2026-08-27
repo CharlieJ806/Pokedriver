@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { loadData, POKEMON, QUESTIONS } from "@/data";
 import { useGameStore } from "@/lib/store";
 import { AudioEngine } from "@/lib/audio";
+import { useEffect, useRef, useState } from "react";
 import { domBurst } from "@/lib/dom-fx";
 import TitleScreen from "./screens/TitleScreen";
 import StarterScreen from "./screens/StarterScreen";
@@ -33,8 +34,17 @@ export default function GameApp() {
   const overSfxDone = useRef(false);
   const [booted, setBooted] = useState(false);
 
+  const [dataError, setDataError] = useState(false);
+
+  // 顺序关键:hydrate 快照 questionPool([...QUESTIONS])、formulas 建 PKMN_BY_ID,
+  // 都必须发生在运行时数据(PoKeMon/Questions JSON)就绪之后
   useEffect(() => {
-    hydrate();
+    loadData()
+      .then(() => {
+        hydrate();
+        setDataError(false);
+      })
+      .catch(() => setDataError(true));
   }, [hydrate]);
 
   // 启动画面:加载进度条至少展示一小段时间,避免本地加载过快时一闪而过
@@ -110,7 +120,33 @@ export default function GameApp() {
     }
   }, [screen, gameOver]);
 
-  if (!hydrated || !booted) {
+  if (dataError) {
+    return (
+      <div id="app">
+        <div className="loading-screen">
+          <div className="loading-inner">
+            <div className="logo-top">宝可驾</div>
+            <div className="loading-text">资源加载失败,请检查网络后重试</div>
+            <button
+              type="button"
+              className="btn primary"
+              style={{ marginTop: 16 }}
+              onClick={() => {
+                setDataError(false);
+                loadData()
+                  .then(() => setDataError(false))
+                  .catch(() => setDataError(true));
+              }}
+            >
+              重试
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!hydrated || !booted || POKEMON.length === 0 || QUESTIONS.length === 0) {
     return (
       <div id="app">
         <div className="loading-screen">

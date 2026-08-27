@@ -281,6 +281,7 @@ body{
 .dex-cell{
   border:1px solid var(--line);border-radius:12px;background:var(--panel);padding:8px 4px 6px;
   text-align:center;cursor:pointer;transition:.12s;
+  content-visibility:auto;contain-intrinsic-size:auto 86px;
 }
 .dex-cell:active{transform:scale(.94)}
 .dex-cell img{width:44px;height:36px;object-fit:contain;image-rendering:pixelated}

@@ -16,6 +16,17 @@ export default function MapScreen() {
   const [deckOpen, setDeckOpen] = useState(false);
   const [guideOpen, setGuideOpen] = useState(false);
 
+  // 空闲预取 three.js/fx3d 分包:点战斗节点时 3D 场景立即可用(不阻塞地图交互)
+  useEffect(() => {
+    const warm = () => void import("@/lib/fx3d");
+    if ("requestIdleCallback" in window) {
+      const id = requestIdleCallback(warm, { timeout: 3000 });
+      return () => cancelIdleCallback(id);
+    }
+    const t = setTimeout(warm, 1500);
+    return () => clearTimeout(t);
+  }, []);
+
   useEffect(() => {
     const canvas = canvasRef.current;
     const container = canvas?.parentElement;

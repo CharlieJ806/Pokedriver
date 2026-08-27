@@ -20,7 +20,8 @@ import { ALL_CARDS, findCard } from "@/lib/cards";
 import { ICON } from "@/lib/icon";
 import { AudioEngine } from "@/lib/audio";
 import { spawnFxText, domBurst } from "@/lib/dom-fx";
-import { BattleFX } from "@/lib/fx3d";
+// three.js/fx3d 仅战斗分包需要:这里按需动态加载,避免主包体积膨胀
+// (捕获时战斗场景必然已挂载,动态包已在缓存,resolve 为微任务级)
 import { GAME_EVENTS } from "@/lib/events";
 import type { BallKey } from "@/lib/types";
 
@@ -97,8 +98,9 @@ export default function Modal() {
                     const layer = document.getElementById("battle-stage");
                     const finish = () => {
                       if (res.success) {
-                        AudioEngine.sfx("caught");
-                        if (BattleFX.ok) setTimeout(() => BattleFX.endCapture(), 400);
+                        void import("@/lib/fx3d").then((m) => {
+                          if (m.BattleFX.ok) setTimeout(() => m.BattleFX.endCapture(), 400);
+                        });
                         if (layer) {
                           spawnFxText(
                             layer,
@@ -120,16 +122,18 @@ export default function Modal() {
                         finishCapture();
                       }, res.success ? 900 : 1200);
                     };
-                    if (BattleFX.ok) {
+                    void import("@/lib/fx3d").then(({ BattleFX }) => {
+                      if (!BattleFX.ok) {
+                        setTimeout(finish, 1200);
+                        return;
+                      }
                       BattleFX.capture({
                         result: res.success,
                         onShake: () => AudioEngine.sfx("ballShake"),
                         onAbsorbed: () => AudioEngine.sfx("ballHit"),
                         onResult: finish,
                       });
-                    } else {
-                      setTimeout(finish, 1200);
-                    }
+                    });
                   }}
                 >
                   <span className="b-icon">{ball.icon}</span>
