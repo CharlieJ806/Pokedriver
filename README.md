@@ -53,6 +53,36 @@ public/       背景图与 manifest
 scripts/      测试脚本(存档兼容 / 布局检查 / 战斗流程)
 ```
 
+## 🎁 发福利(版本福利)
+
+纯前端无服务端,福利只能随「版本更新」发放:改 [lib/gifts.ts](lib/gifts.ts) 里的 `GIFTS` 表 → `npm run build` 重新部署,玩家下次打开游戏自动到账(每个 id 只发一次,领取记录存 `meta.claimedGifts`)。
+
+```ts
+{
+  id: "gift-2026-11-10",       // 唯一 id;换新 id 才会再发一次
+  title: "版本更新补偿",
+  desc: "补偿 500 金币 + 超级球 ×3",
+  startAt: "2026-11-10",       // 生效日(含当天),可省略
+  endAt: "2026-11-17",         // 截止日(含当天),可省略 = 永久
+  items: { gold: 500, balls: { great: 3 }, pkm: [25], cards: ["tackle"] },
+  // 可选:三选一礼包(发完 items 后弹出选择框,结果存 meta.giftChoices)
+  choice: {
+    prompt: "选择一只传说宝可梦",
+    options: [
+      { id: "kyogre", pkm: [382], desc: "水系 · 高特攻" },
+      { id: "groudon", pkm: [383], desc: "地面系 · 高物攻" },
+      { id: "rayquaza", pkm: [384], desc: "龙/飞行 · 全能" },
+    ],
+  },
+}
+```
+
+- `items` 字段:`gold` 养成金币、`balls` 精灵球、`pkm` 直接收录图鉴、`cards` 解锁技能卡
+- `balls` 是**一次性**的:先进 `meta.pendingBalls`,开新局或继续冒险时并入本局,不是每局重发
+- `choice` 选中的宝可梦会入库,队伍有空位时自动上阵;点「稍后再选」会在标题页留入口
+- 奖励存在玩家浏览器里,改存档可刷,只适合体验向奖励,别发付费资产
+- 需要「指定玩家发放 / 防重复领取」必须加后端(Cloudflare Pages Functions + KV)
+
 ## 📄 License
 
 仅限个人学习与娱乐使用。

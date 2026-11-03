@@ -1,4 +1,4 @@
-import type { MapNode, MetaState, RunState } from "./types";
+import type { BallKey, MapNode, MetaState, RunState } from "./types";
 import { cardFromIdList } from "./cards";
 
 /** 沿用本地版(localStorage)键名,保证老存档可读 */
@@ -8,6 +8,30 @@ export const IMPORTED_KEY = "dungeonDrive_importedQuestions";
 
 export function defaultPokeBalls() {
   return { normal: 3, great: 0, ultra: 0, beast: 0, master: 0 };
+}
+
+/** 全零球袋(福利待发的精灵球从 0 开始累计) */
+export function emptyPokeBalls(): Record<BallKey, number> {
+  return { normal: 0, great: 0, ultra: 0, beast: 0, master: 0 };
+}
+
+/** 球袋相加(a 为基础,额外累加 b) */
+export function mergePokeBalls(
+  a: Record<BallKey, number>,
+  b: Record<BallKey, number> | undefined,
+): Record<BallKey, number> {
+  const out = { ...a };
+  if (!b) return out;
+  (Object.keys(out) as BallKey[]).forEach((k) => {
+    out[k] = (out[k] || 0) + (b[k] || 0);
+  });
+  return out;
+}
+
+/** 是否有福利待发的精灵球 */
+export function hasPendingBalls(b: Record<BallKey, number> | undefined): boolean {
+  if (!b) return false;
+  return (Object.keys(b) as BallKey[]).some((k) => (b[k] || 0) > 0);
 }
 
 export function defaultMeta(): MetaState {
@@ -32,6 +56,9 @@ export function defaultMeta(): MetaState {
     evolveCount: 0,
     achievements: {},
     bestExamScore: 0,
+    claimedGifts: {},
+    giftChoices: {},
+    pendingBalls: emptyPokeBalls(),
   };
 }
 
@@ -67,6 +94,11 @@ export function loadMeta(): MetaState {
       achievements:
         d.achievements && typeof d.achievements === "object" ? d.achievements : {},
       bestExamScore: d.bestExamScore || 0,
+      claimedGifts:
+        d.claimedGifts && typeof d.claimedGifts === "object" ? d.claimedGifts : {},
+      giftChoices:
+        d.giftChoices && typeof d.giftChoices === "object" ? d.giftChoices : {},
+      pendingBalls: { ...emptyPokeBalls(), ...(d.pendingBalls || {}) },
     };
     // 迁移后立即写回,补全缺省字段
     saveMeta(meta);

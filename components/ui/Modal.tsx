@@ -17,6 +17,7 @@ import {
 } from "@/data/constants";
 import { evolveCost, getEvoTargets } from "@/data/evolutions";
 import { ALL_CARDS, findCard } from "@/lib/cards";
+import { getGift, optionLabel } from "@/lib/gifts";
 import { ICON } from "@/lib/icon";
 import { AudioEngine } from "@/lib/audio";
 import { spawnFxText, domBurst } from "@/lib/dom-fx";
@@ -44,6 +45,7 @@ export default function Modal() {
   const removeFromTeam = useGameStore((s) => s.removeFromTeam);
   const setActiveTeam = useGameStore((s) => s.setActiveTeam);
   const evolvePkm = useGameStore((s) => s.evolvePkm);
+  const chooseGiftOption = useGameStore((s) => s.chooseGiftOption);
 
   if (!modal) return null;
 
@@ -374,6 +376,53 @@ export default function Modal() {
           </div>
           <button className="btn btn-ghost" onClick={closeModal}>
             关闭
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  /* ── 福利三选一 ── */
+  if (modal.kind === "giftChoice") {
+    const gift = getGift(modal.giftId);
+    if (!gift?.choice) return null;
+    return (
+      <div className="modal-wrap">
+        <div className="modal">
+          <div className="capture-title">🎁 {gift.title}</div>
+          <div className="gift-choice-prompt">
+            {gift.choice.prompt ?? "任选一个带回家:"}
+          </div>
+          <div className="gift-choice-list">
+            {gift.choice.options.map((opt) => {
+              const pkmId = opt.pkm?.[0];
+              return (
+                <button
+                  key={opt.id}
+                  className="gift-choice-card"
+                  onClick={() => {
+                    chooseGiftOption(gift.id, opt.id);
+                    AudioEngine.sfx("caught");
+                  }}
+                >
+                  {pkmId != null && ICON(pkmId) ? (
+                    <img src={ICON(pkmId)} alt="" />
+                  ) : (
+                    <span className="gc-icon-fallback">👾</span>
+                  )}
+                  <span className="gc-body">
+                    <span className="gc-name">
+                      {optionLabel(gift, opt)}
+                      {pkmId != null ? <em className="gc-tag">#{pkmId}</em> : null}
+                    </span>
+                    <span className="gc-desc">{opt.desc ?? ""}</span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          <button className="btn btn-ghost" onClick={closeModal}>
+            稍后再选
           </button>
         </div>
       </div>

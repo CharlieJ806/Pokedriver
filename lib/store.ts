@@ -35,9 +35,13 @@ import {
 } from "./formulas";
 import {
   defaultMeta,
+  defaultPokeBalls,
+  emptyPokeBalls,
+  hasPendingBalls,
   hasRun,
   loadMeta,
   loadRun,
+  mergePokeBalls,
   saveImportedQuestions,
   saveMeta as persistMeta,
   saveRun as persistRun,
@@ -55,6 +59,7 @@ import type {
 } from "./types";
 import { GAME_EVENTS } from "./events";
 import { ADMIN_GOLD, adminPokeBalls, applyAdminMeta, isAdminEnv } from "./admin";
+import { grantPendingGifts, pendingGiftChoices, chooseGiftOption as chooseGiftOptionOn } from "./gifts";
 
 export type StarterDef = {
   id: number;
@@ -99,6 +104,15 @@ function ensureMetaDefaults(meta: MetaState): void {
     meta.achievements = {};
   }
   if (typeof meta.bestExamScore !== "number") meta.bestExamScore = 0;
+  if (!meta.claimedGifts || typeof meta.claimedGifts !== "object") {
+    meta.claimedGifts = {};
+  }
+  if (!meta.giftChoices || typeof meta.giftChoices !== "object") {
+    meta.giftChoices = {};
+  }
+  if (!meta.pendingBalls || typeof meta.pendingBalls !== "object") {
+    meta.pendingBalls = emptyPokeBalls();
+  }
 }
 
 export type AnswerResult = {
@@ -153,6 +167,8 @@ type GameStore = {
   doGachaOnce: () => void;
   toggleDeckCard: (id: string) => void;
   resetBuiltDeck: () => void;
+  /** 三选一礼包:选定其中一个选项 */
+  chooseGiftOption: (giftId: string, optionId: string) => void;
   bumpWrongQ: (qid: string, n?: number) => void;
   clearWrongQ: (qid: string) => void;
   recordExamResult: (score: number, wrongIds: string[], correctIds?: string[]) => void;
@@ -243,14 +259,22 @@ export const useGameStore = create<GameStore>((set, get) => ({
     ensureMetaDefaults(meta);
     if (isAdminEnv()) applyAdminMeta(meta);
     const imported = getImportedQuestions();
+    // 版本福利:未领取的自动到账(纯前端一次性补发,见 lib/gifts.ts)
+    const gift = grantPendingGifts(meta);
+    // 三选一礼包:道具已发,首次进入弹出选择框
+    const choice = pendingGiftChoices(meta)[0] ?? null;
     // 老玩家回溯解锁成就(静默,不弹 toast)
     evalAchievements(meta);
     set({
       meta,
       questionPool: imported ? imported : [...QUESTIONS],
       hydrated: true,
+      ...(choice
+        ? { modal: { kind: "giftChoice" as const, giftId: choice.id } }
+        : {}),
     });
     persistMeta(meta);
+    if (gift) get().showToast(gift.message, 4500);
   },
 
   saveMeta: () => {
@@ -448,6 +472,17 @@ export const useGameStore = create<GameStore>((set, get) => ({
     get().showToast("已重置为初始五张基础技", 1800);
   },
 
+  chooseGiftOption: (giftId, optionId) => {
+    const meta = cloneMeta(get().meta);
+    ensureMetaDefaults(meta);
+    const res = chooseGiftOptionOn(meta, giftId, optionId);
+    if (!res) return;
+    evalAchievements(meta); // 传说入库可能顺带解锁图鉴/传说成就
+    set({ meta, modal: null });
+    persistMeta(meta);
+    get().showToast(res.message, 3000);
+  },
+
   bumpWrongQ: (qid, n = 1) => {
     const meta = cloneMeta(get().meta);
     meta.wrongQ[qid] = (meta.wrongQ[qid] || 0) + n;
@@ -554,7 +589,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
       teamHp,
       teamMaxHp,
       activeIdx: 0,
-      pokeBalls: isAdminEnv() ? adminPokeBalls() : { normal: 3, great: 0, ultra: 0, beast: 0, master: 0 },
+      pokeBalls: isAdminEnv()
+        ? adminPokeBalls()
+        : mergePokeBalls(defaultPokeBalls(), meta.pendingBalls),
       gameOver: false,
       runWon: false,
       visitedNodes: [],
@@ -578,6 +615,9 @@ export const useGameStore = create<GameStore>((set, get) => ({
       turnPhase: "question",
       turnCorrect: 0,
     };
+
+    // 福利球已并入本局,清空待发队列(下次开局不再重复发放)
+    meta.pendingBalls = emptyPokeBalls();
 
     set({
       meta,
@@ -604,6 +644,16 @@ export const useGameStore = create<GameStore>((set, get) => ({
     if (!save) return false;
     const meta = loadMeta();
     ensureMetaDefaults(meta);
+    // 福利球并入当前对局(一次性,并完即清)
+    const gotBalls = hasPendingBalls(meta.pendingBalls);
+    if (gotBalls) {
+      save.pokeBalls = mergePokeBalls(
+        save.pokeBalls || emptyPokeBalls(),
+        meta.pendingBalls,
+      );
+      meta.pendingBalls = emptyPokeBalls();
+      persistRun(save);
+    }
     set({
       run: save,
       meta,
@@ -613,7 +663,10 @@ export const useGameStore = create<GameStore>((set, get) => ({
       modal: null,
     });
     persistMeta(meta);
-    get().showToast("继续冒险！", 1800);
+    get().showToast(
+      gotBalls ? "继续冒险！🎁 福利精灵球已放入背包" : "继续冒险！",
+      2200,
+    );
     return true;
   },
 

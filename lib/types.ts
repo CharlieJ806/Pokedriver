@@ -115,6 +115,9 @@ export type MetaState = {
   evolveCount: number; // 累计进化次数
   achievements: Record<string, boolean>; // 已解锁成就
   bestExamScore: number; // 模拟考试最高分
+  claimedGifts: Record<string, boolean>; // 已领取的版本福利 id(见 lib/gifts.ts)
+  giftChoices: Record<string, string>; // 三选一礼包:giftId → 已选 optionId
+  pendingBalls: Record<BallKey, number>; // 福利发放的精灵球,开新局/继续冒险时并入对局
 };
 
 /* ============ Run(单局,持久化到 dungeonDrive_save) ============ */
@@ -200,6 +203,7 @@ export type ModalState =
   | { kind: "event"; eventId: string }
   | { kind: "confirm"; title: string; message: string; okText: string; cancelText: string }
   | { kind: "pkmDetail"; id: number }
+  | { kind: "giftChoice"; giftId: string }
   | null;
 
 /* ============ 考试 ============ */

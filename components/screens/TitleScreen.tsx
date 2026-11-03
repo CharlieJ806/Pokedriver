@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useGameStore } from "@/lib/store";
 import { getPkmName } from "@/lib/formulas";
+import { pendingGiftChoices } from "@/lib/gifts";
 import { ICON } from "@/lib/icon";
 import { AudioEngine } from "@/lib/audio";
 
@@ -11,6 +12,8 @@ export default function TitleScreen() {
   const hasSave = useGameStore((s) => s.hasSave);
   const setScreen = useGameStore((s) => s.setScreen);
   const continueRun = useGameStore((s) => s.continueRun);
+  const openModal = useGameStore((s) => s.openModal);
+  const pendingGift = pendingGiftChoices(meta)[0] ?? null;
 
   // 封面飘动宝可梦:每 5s 从已解锁图鉴随机换一只(图鉴为空时兜底皮卡丘)
   const [titlePkmId, setTitlePkmId] = useState(25);
@@ -94,6 +97,17 @@ export default function TitleScreen() {
         </div>
 
         <div className="title-menu">
+          {pendingGift && (
+            <button
+              className="btn btn-primary"
+              onClick={() => {
+                AudioEngine.sfx("click");
+                openModal({ kind: "giftChoice", giftId: pendingGift.id });
+              }}
+            >
+              🎁 福利待领取:{pendingGift.title}
+            </button>
+          )}
           <button className="btn btn-primary" onClick={startNew}>
             🎮 新的冒险
           </button>
